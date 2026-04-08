@@ -1,0 +1,38 @@
+package views
+
+import (
+	"github.com/SoulStalker/chz-api-client/internal/model"
+	"strconv"
+)
+
+templ Detail(detail *model.DocumentDetail) {
+	@Layout("Документ " + detail.DocumentNumber) {
+		<h1 class="text-2xl font-bold mb-2">Документ { detail.DocumentNumber }</h1>
+		<p class="text-sm text-gray-500 mb-4">{ detail.DocumentDate } | { detail.CounteragentName } | { detail.Status }</p>
+		if len(detail.MarkingCodes) > 0 {
+			<div class="mb-6">
+				<h2 class="text-lg font-semibold mb-2">Коды маркировки ({ strconv.Itoa(len(detail.MarkingCodes)) })</h2>
+				<table class="w-full bg-white shadow rounded">
+					<thead class="bg-gray-100">
+						<tr>
+							<th class="px-4 py-2 text-left">#</th>
+							<th class="px-4 py-2 text-left">КИЗ</th>
+						</tr>
+					</thead>
+					<tbody>
+						for i, kiz := range detail.MarkingCodes {
+							<tr class="border-t">
+								<td class="px-4 py-2 text-gray-500">{ strconv.Itoa(i + 1) }</td>
+								<td class="px-4 py-2 font-mono text-sm">{ kiz }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+		<div>
+			<h2 class="text-lg font-semibold mb-2">XML документа</h2>
+			<pre class="bg-white shadow rounded p-4 overflow-auto text-xs max-h-96">{ detail.XML }</pre>
+		</div>
+	}
+}

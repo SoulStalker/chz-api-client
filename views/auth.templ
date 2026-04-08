@@ -1,0 +1,10 @@
+package views
+
+templ AuthError(msg string) {
+	@Layout("Ошибка авторизации") {
+		<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+			<strong>Ошибка:</strong> { msg }
+		</div>
+		<a href="/certs" class="mt-4 inline-block text-blue-600 hover:underline">← Назад к сертификатам</a>
+	}
+}
