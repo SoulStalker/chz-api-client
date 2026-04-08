@@ -3,7 +3,7 @@ module github.com/SoulStalker/chz-api-client
 go 1.26.1
 
 require (
-	github.com/SoulStalker/sign-service v0.0.0
+	github.com/SoulStalker/sign-service v0.0.0-20260407130419-23c286c216e0
 	github.com/a-h/templ v0.3.865
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gofiber/fiber/v2 v2.52.6
@@ -33,5 +33,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
 )
-
-replace github.com/SoulStalker/sign-service => ../sign-service

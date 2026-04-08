@@ -7,6 +7,7 @@ diadoc:
 
 crpt:
   base_url: "https://markirovka.crpt.ru"
+  thumbprint: ""  # SHA1 hex сертификата из sign-service (CRPT_THUMBPRINT)
 
 signer:
   addr: "localhost:50051"

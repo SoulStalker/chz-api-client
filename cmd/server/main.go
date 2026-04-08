@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	cfgPath := flag.String("config", "config/example.yml", "path to config file")
+	cfgPath := flag.String("config", "config/prod.yml", "path to config file")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -39,8 +39,9 @@ func main() {
 	// Diadoc HTTP client
 	diadocClient := diadoc.New(cfg.Diadoc.BaseURL, cfg.Diadoc.ClientID)
 
-	// CRPT client (stub)
-	_ = crpt.New(cfg.CRPT.BaseURL)
+	// CRPT client
+	crptClient := crpt.New(cfg.CRPT.BaseURL, signerClient)
+	_ = crptClient
 
 	// Session store (in-memory)
 	store := session.New(session.Config{

@@ -1,265 +1,123 @@
-# edo-client — CLAUDE.md
+CLAUDE.md
 
-## Назначение проекта
+# Этап 2
 
-Go-сервис для интеграции с двумя внешними системами:
-- **Честный знак (CRPT GIS MT)** — мониторинг маркированных товаров
-- **Диадок (Kontур EDО)** — получение входящих документов ЭДО (УПД, накладные)
+## Цель этапа
 
-Криптографическая подпись делегирована в `sign-service` (gRPC, Windows Certificate Store, ГОСТ).
+Реализовать получение JWT-токена ЧЗ (GIS MT True API) через УКЭП-сертификат из sign-service.
+После успешного получения токена — убедиться, что он принимается защищёнными методами API.
 
-## Цели первой итерации (MVP)
+## Протокол авторизации (раздел 1.5 документации True API v6.44)
 
-1. Авторизация в Диадок (логин/пароль → Bearer token)
-2. Авторизация в Честный знак (OAuth2 через сертификат sign-service)
-3. Выбор организации (boxId в Диадок, participantId в ЧЗ)
-4. Список входящих документов Диадок
-5. Детализация документа (включая марки ЧЗ из `НомСредИдентТов/КИЗ`)
-6. Веб-интерфейс: просмотр сертификатов sign-service, выбор сертификата, список документов, детализация
+Двухшаговый процесс:
 
-## Стек
+### Шаг 1 — GET /auth/key
+Сервер возвращает случайную строку для подписи:
+```json
+{"uuid": "a63ff582-b723-4da7-958b-453da27a6c62", "data": "GNUFBAZBMPIUUMLXNMIOGSHTGFXZMT"}
+```
 
-| Слой | Технология |
-|---|---|
-| HTTP-клиент | `go-resty/resty/v2` |
-| Конфиг | `ilyakaznacheev/cleanenv` (YAML + ENV) |
-| Веб-сервер | `gofiber/fiber/v2` |
-| Шаблоны | `a-h/templ` (генерируется в `gen/templ/`) |
-| Логирование | `log/slog` canonical log line (один structured лог на запрос) |
-| sign-service | gRPC клиент `github.com/SoulStalker/sign-service/gen/signer` |
-| Go | 1.24+ |
+### Шаг 2 — POST /auth/simpleSignIn
+Клиент отправляет uuid и подписанные данные:
+```json
+{
+  "uuid": "a63ff582-b723-4da7-958b-453da27a6c62",
+  "data": "<base64 CAdES-BES прикреплённой подписи>"
+}
+```
+Ответ при успехе:
+```json
+{"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
+```
+Токен действует **не более 10 часов**.
 
-## Структура проекта
+### Критичные детали подписи
+- Тип: **CAdES-BES, прикреплённая (attached/enveloping)** — `detached = false`
+- Формат: CMS/PKCS#7, результат в **Base64**
+- Входные данные: строка `data` как есть (не декодировать из base64 перед подписью)
+- sign-service уже реализует именно такую подпись через `crypt32.dll`
+
+## Структура проекта (только для этого этапа)
 
 ```
-edo-client/
-├── cmd/
-│   └── server/
-│       └── main.go              # Точка входа: config → deps → fiber.App
-├── config/
-│   ├── config.go                # Структуры конфига (cleanenv tags)
-│   └── example.yml              # Пример конфига
-├── internal/
-│   ├── diadoc/
-│   │   ├── client.go            # HTTP-клиент Диадок (go-resty)
-│   │   ├── auth.go              # Авторизация (login/password → token)
-│   │   ├── organizations.go     # Список ящиков (GetMyOrganizations)
-│   │   ├── documents.go         # GetDocuments V3 (входящие)
-│   │   └── detail.go            # GetMessage + парсинг КИЗ из XML
-│   ├── crpt/
-│   │   ├── client.go            # HTTP-клиент CRPT (go-resty)
-│   │   └── auth.go              # OAuth2 через sign-service (заглушка на старте)
-│   ├── signer/
-│   │   └── client.go            # gRPC-клиент sign-service (ListCertificates, Sign)
-│   ├── web/
-│   │   ├── handlers/
-│   │   │   ├── certs.go         # GET /certs — список сертификатов
-│   │   │   ├── auth.go          # POST /auth — форма входа Диадок
-│   │   │   ├── orgs.go          # GET /orgs — выбор организации
-│   │   │   ├── documents.go     # GET /docs — список документов
-│   │   │   └── detail.go        # GET /docs/:msgId — детализация + КИЗ
-│   │   └── middleware/
-│   │       └── logger.go        # Canonical log line middleware (slog)
-│   └── model/
-│       ├── diadoc.go            # DTO: Document, DocumentDetail, MarkingCode
-│       └── signer.go            # DTO: Certificate
-├── views/                       # templ-шаблоны (*.templ)
-│   ├── layout.templ
-│   ├── certs.templ
-│   ├── auth.templ
-│   ├── orgs.templ
-│   ├── documents.templ
-│   └── detail.templ
-├── gen/
-│   └── templ/                   # Авто-генерация (не редактировать вручную)
-├── Makefile
+crpt-explore/
+├── go.mod
+├── go.sum
+├── main.go          # explore-скрипт: auth + проверочный запрос
 └── CLAUDE.md
 ```
 
-## Конфиг (config/config.go)
+После успешной разведки — перенести в `internal/crpt/` основного сервиса.
 
-```go
-type Config struct {
-    Server   ServerConfig   `yaml:"server"`
-    Diadoc   DiadocConfig   `yaml:"diadoc"`
-    CRPT     CRPTConfig     `yaml:"crpt"`
-    Signer   SignerConfig   `yaml:"signer"`
-    Log      LogConfig      `yaml:"log"`
-}
-
-type ServerConfig struct {
-    Addr string `yaml:"addr" env:"SERVER_ADDR" env-default:":8080"`
-}
-
-type DiadocConfig struct {
-    BaseURL   string `yaml:"base_url"   env:"DIADOC_BASE_URL"   env-default:"https://diadoc-api.kontur.ru"`
-    ClientID  string `yaml:"client_id"  env:"DIADOC_CLIENT_ID"`   // DDauth ключ интеграции
-}
-
-type CRPTConfig struct {
-    BaseURL string `yaml:"base_url" env:"CRPT_BASE_URL" env-default:"https://markirovka.crpt.ru"`
-}
-
-type SignerConfig struct {
-    Addr string `yaml:"addr" env:"SIGNER_ADDR" env-default:"localhost:50051"`
-}
-
-type LogConfig struct {
-    Level string `yaml:"level" env:"LOG_LEVEL" env-default:"info"`
-}
-```
-
-## Авторизация Диадок
-
-**Метод:** `POST /V3/Authenticate`
-**Заголовок:** `Authorization: DiadocAuth ddauth_api_client_id={ClientID},ddauth_login={login},ddauth_password={password_sha256_hex}`
-
-Пароль хешируется SHA-256 на клиенте перед отправкой.
-Ответ: plain text Bearer token.
-
-Токен хранится в **сессии Fiber** (cookie, in-memory store, не Redis на старте).
-При каждом запросе к Диадок: `Authorization: Bearer {token}`.
-
-## Список документов Диадок (GET /V3/GetDocuments)
-
-Параметры для входящих:
-```
-filterCategory=UniversalTransferDocument.InboundNotFinished
-boxId={выбранный boxId}
-```
-
-Ответ — `DocumentList` (JSON). Нужные поля модели:
-```go
-type Document struct {
-    MessageId      string    `json:"MessageId"`
-    EntityId       string    `json:"EntityId"`
-    DocumentNumber string    `json:"DocumentNumber"`
-    DocumentDate   string    `json:"DocumentDate"`
-    CounteragentId string    // из Counteragent.OrgId
-    Status         string    // из DocflowStatus
-    HasMarkingCodes bool     // вычислять при парсинге
-}
-```
-
-## Детализация документа и КИЗ
-
-**Метод:** `GET /V3/GetMessage?boxId={}&messageId={}&entityId={}`
-
-Ответ содержит сущности (`Entities`), в том числе XML-контент документа (base64).
-Для извлечения КИЗ (кодов идентификации) — парсить XML:
-```xml
-<НомСредИдентТов>
-    <КИЗ>010460406000002821xVjKN2L0pqT</КИЗ>
-</НомСредИдентТов>
-```
-
-Парсинг через `encoding/xml`. Не использовать строгие схемы — документы многоформатные.
-КИЗ — строки длиной 31 символ (DataMatrix GS1).
-
-## gRPC sign-service (internal/signer/client.go)
-
-```go
-import pb "github.com/SoulStalker/sign-service/gen/signer"
-
-// Список сертификатов для отображения в UI
-certs, err := pb.NewSignerClient(conn).ListCertificates(ctx, &pb.Empty{})
-
-// Подпись (для ЧЗ авторизации — на будущее)
-resp, err := pb.NewSignerClient(conn).Sign(ctx, &pb.SignRequest{
-    Payload:    data,
-    Thumbprint: selectedThumbprint,
-    CallerId:   "edo-client",
-})
-```
-
-## Canonical Log Line (middleware/logger.go)
-
-Один `slog` лог на HTTP-запрос, в конце обработчика:
-```
-level=INFO msg="http request"
-  method=GET path=/docs status=200
-  duration_ms=42 box_id=xxx
-  doc_count=25 trace_id=uuid
-```
-
-Реализация через `fiber.Middleware` + `slog.With(...)`.
-`trace_id` — `X-Request-ID` из заголовка или генерация UUID.
-
-## Веб-интерфейс (Fiber + templ)
-
-Маршруты:
-```
-GET  /                  → redirect /certs
-GET  /certs             → список сертификатов из sign-service
-POST /auth              → форма входа Диадок (login, password, thumbprint)
-GET  /orgs              → список организаций (ящиков)
-POST /orgs/select       → выбор boxId → сессия
-GET  /docs              → список входящих документов
-GET  /docs/:messageId   → детализация + КИЗ
-```
-
-Минималистичный UI: таблицы, формы без JS-фреймворка.
-CSS: один встроенный `<style>` в layout.templ (Tailwind CDN для прототипа).
-
-## Makefile targets
-
-```makefile
-.PHONY: templ build run lint
-
-templ:       ## Генерация templ → Go
-    templ generate ./views/...
-
-build: templ ## Сборка бинаря
-    go build -o ./bin/edo-client ./cmd/server
-
-run: build
-    ./bin/edo-client --config config/example.yml
-
-lint:
-    golangci-lint run ./...
-```
-
-## Ограничения первой итерации
-
-- Авторизация ЧЗ (OAuth2 через сертификат) — **заглушка** (`crpt/auth.go` возвращает `ErrNotImplemented`)
-- Нет постраничности документов (берём первые 50)
-- Нет кэширования токенов в Redis — только in-memory сессия Fiber
-- Windows-only: sign-service (crypt32.dll), само приложение запускается на Windows-хосте
-
-## Зависимости (go.mod стартовые)
+## Зависимости
 
 ```
-require (
-    github.com/gofiber/fiber/v2          latest
-    github.com/go-resty/resty/v2         latest
-    github.com/ilyakaznacheev/cleanenv   latest
-    github.com/a-h/templ                 latest
-    github.com/gofiber/storage/memory    latest  // in-memory сессии
-    github.com/SoulStalker/sign-service  v0.0.0  // replace → ../sign-service
-    google.golang.org/grpc               latest
-    google.golang.org/protobuf           latest
-)
+github.com/go-resty/resty/v2
+github.com/ilyakaznacheev/cleanenv
+google.golang.org/grpc
+google.golang.org/protobuf
+github.com/SoulStalker/sign-service  // replace ../sign-service
 ```
 
-## Порядок имплементации (для Claude Code)
+## Конфигурация (ENV или флаги)
 
-1. `go mod init` + добавить зависимости
-2. `config/config.go` + `config/example.yml`
-3. `internal/signer/client.go` — gRPC клиент
-4. `internal/diadoc/client.go` + `auth.go`
-5. `internal/diadoc/organizations.go` + `documents.go` + `detail.go`
-6. `internal/model/` — DTO structs
-7. `views/*.templ` — шаблоны
-8. `make templ`
-9. `internal/web/handlers/` — все хендлеры
-10. `internal/web/middleware/logger.go`
-11. `cmd/server/main.go` — сборка зависимостей, запуск Fiber
-12. `Makefile`
-13. `internal/crpt/client.go` + `auth.go` (заглушка)
+| ENV | Описание | Пример |
+|---|---|---|
+| `CRPT_BASE_URL` | Боевой или тестовый стенд | `https://markirovka.crpt.ru` |
+| `CRPT_THUMBPRINT` | SHA1 hex сертификата из sign-service | `195934d72dcdf...` |
+| `SIGNER_ADDR` | gRPC адрес sign-service | `localhost:50051` |
 
-## Что НЕ делать сейчас
+## Алгоритм реализации (main.go)
 
-- Не писать отправку/подписание документов
-- Не реализовывать авторизацию ЧЗ через сертификат (только заглушка)
-- Не добавлять БД / очереди
-- Не генерировать TypeScript/JS (только server-side rendering)
+```
+1. Подключиться к sign-service gRPC
+2. ListCertificates → показать список → взять thumbprint из ENV/флага
+3. GET {CRPT_BASE_URL}/api/v3/auth/key → {uuid, data}
+4. Sign(payload=[]byte(data), thumbprint, caller_id="crpt-explore") → signedBytes
+5. base64.StdEncoding.EncodeToString(signedBytes) → signedB64
+6. POST /api/v3/auth/simpleSignIn body={uuid, data: signedB64} → {token}
+7. Напечатать токен и его длину
+8. Проверочный запрос с токеном (например GET /api/v3/facade/edo/documents) → статус
+```
+
+## URL стендов ЧЗ
+
+- **Продуктив**: `https://markirovka.crpt.ru`
+- **Sandbox**: уточнить в ЛК ГИС МТ (обычно `https://markirovka-sandbox.crpt.ru`)
+
+Базовый путь для v3: `/api/v3/`
+
+## Canonical log line
+
+Каждый HTTP-запрос логировать через `slog`:
+```
+level=INFO msg="crpt request" method=GET url=/auth/key status=200 duration_ms=123
+level=INFO msg="sign" thumbprint=195934... payload_len=30 signed_len=2048
+level=INFO msg="crpt request" method=POST url=/auth/simpleSignIn status=200
+level=INFO msg="token received" token_len=512 expires_in="10h"
+```
+
+## Обработка ошибок (коды из документации)
+
+| HTTP | Тело | Действие |
+|---|---|---|
+| 400 | uuid не указан | проверить шаг 1 |
+| 400 | Ошибка при проверке подписи | неверный формат подписи (detached?) |
+| 400 | UUID не найден | uuid устарел — повторить шаг 1 |
+| 403 | Отсутствует доступ | сертификат не добавлен в ЛК ГИС МТ |
+
+## Что НЕ реализовывать на этом этапе
+
+- Получение документов ЭДО
+- Диадок
+- Веб-интерфейс
+- Кэширование токена
+- Retry-логику (просто логировать ошибку и выходить)
+
+## После успешной разведки
+
+Зафиксировать:
+1. Точный URL стенда
+2. Реальный формат ответа `/auth/key` (поля могут отличаться от документации)
+3. Длину и структуру JWT (для последующего парсинга `exp`)
+4. Какие защищённые методы доступны с полученным токеном
