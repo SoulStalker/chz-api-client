@@ -21,6 +21,7 @@ func (h *AuthHandler) Handle(c *fiber.Ctx) error {
 	password := c.FormValue("password")
 	thumbprint := c.FormValue("thumbprint")
 
+	c.Type("html")
 	token, err := h.diadoc.Authenticate(login, password)
 	if err != nil {
 		return views.AuthError(err.Error()).Render(c.Context(), c.Response().BodyWriter())

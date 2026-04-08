@@ -30,5 +30,6 @@ func (h *DocumentsHandler) Handle(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Ошибка получения документов: " + err.Error())
 	}
+	c.Type("html")
 	return views.Documents(docs, boxId).Render(c.Context(), c.Response().BodyWriter())
 }

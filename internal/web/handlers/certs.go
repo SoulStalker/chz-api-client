@@ -19,5 +19,6 @@ func (h *CertsHandler) Handle(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Ошибка получения сертификатов: " + err.Error())
 	}
+	c.Type("html")
 	return views.Certs(certs).Render(c.Context(), c.Response().BodyWriter())
 }

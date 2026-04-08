@@ -21,6 +21,7 @@ func (h *OrgsHandler) Handle(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Ошибка получения организаций: " + err.Error())
 	}
+	c.Type("html")
 	return views.Orgs(orgs).Render(c.Context(), c.Response().BodyWriter())
 }
 
