@@ -1,0 +1,15 @@
+server:
+  addr: ":8080"
+
+diadoc:
+  base_url: "https://diadoc-api.kontur.ru"
+  client_id: "YOUR_DIADOC_CLIENT_ID"
+
+crpt:
+  base_url: "https://markirovka.crpt.ru"
+
+signer:
+  addr: "localhost:50051"
+
+log:
+  level: "info"
