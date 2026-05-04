@@ -27,13 +27,13 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint string) (string, e
 	resp, err := c.http.R().
 		SetContext(ctx).
 		SetResult(&keyResp).
-		Get("/api/v3/auth/key")
+		Get("/api/v3/true-api/auth/key")
 	if err != nil {
 		return "", fmt.Errorf("crpt auth/key: %w", err)
 	}
 	slog.Info("crpt request",
 		"method", "GET",
-		"url", "/auth/key",
+		"url", "/api/v3/true-api/auth/key",
 		"status", resp.StatusCode(),
 		"duration_ms", time.Since(start).Milliseconds(),
 	)
@@ -64,13 +64,13 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint string) (string, e
 			"data": signedB64,
 		}).
 		SetResult(&tokenResp).
-		Post("/api/v3/auth/simpleSignIn")
+		Post("/api/v3/true-api/auth/simpleSignIn")
 	if err != nil {
 		return "", fmt.Errorf("crpt simpleSignIn: %w", err)
 	}
 	slog.Info("crpt request",
 		"method", "POST",
-		"url", "/auth/simpleSignIn",
+		"url", "/api/v3/true-api/auth/simpleSignIn",
 		"status", resp.StatusCode(),
 		"duration_ms", time.Since(start).Milliseconds(),
 	)
