@@ -68,7 +68,7 @@ func main() {
 
 	// 3–6. Authenticate: GET /auth/key → Sign → POST /auth/simpleSignIn → JWT
 	crptClient := crpt.New(cfg.CRPT.BaseURL, signerClient)
-	token, err := crptClient.Authenticate(ctx, thumbprint)
+	token, err := crptClient.Authenticate(ctx, thumbprint, cfg.CRPT.INN)
 	if err != nil {
 		slog.Error("аутентификация в ЧЗ", "err", err)
 		os.Exit(1)

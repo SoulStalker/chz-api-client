@@ -22,6 +22,7 @@ type DiadocConfig struct {
 type CRPTConfig struct {
 	BaseURL    string `yaml:"base_url"    env:"CRPT_BASE_URL"    env-default:"https://markirovka.crpt.ru"`
 	Thumbprint string `yaml:"thumbprint"  env:"CRPT_THUMBPRINT"`
+	INN        string `yaml:"inn"         env:"CRPT_INN"`
 }
 
 type SignerConfig struct {
