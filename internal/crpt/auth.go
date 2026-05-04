@@ -56,15 +56,19 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint, inn string) (stri
 	signedB64 := base64.StdEncoding.EncodeToString(signedBytes)
 
 	// Шаг 3 — отправить uuid + подписанные данные
+	body := map[string]string{
+		"uuid": keyResp.UUID,
+		"data": signedB64,
+	}
+	if inn != "" {
+		body["inn"] = inn
+	}
+
 	start = time.Now()
 	var tokenResp signInResp
 	resp, err = c.http.R().
 		SetContext(ctx).
-		SetBody(map[string]string{
-			"uuid": keyResp.UUID,
-			"data": signedB64,
-			"inn":  inn,
-		}).
+		SetBody(body).
 		SetResult(&tokenResp).
 		Post("/api/v3/true-api/auth/simpleSignIn")
 	if err != nil {

@@ -42,7 +42,7 @@ func Layout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " — EDO Client</title><link href=\"https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css\" rel=\"stylesheet\"></head><body class=\"bg-gray-50 text-gray-900\"><nav class=\"bg-white shadow mb-6\"><div class=\"max-w-7xl mx-auto px-4 py-3 flex gap-6\"><a href=\"/certs\" class=\"text-blue-600 hover:underline\">Сертификаты</a> <a href=\"/orgs\" class=\"text-blue-600 hover:underline\">Организации</a> <a href=\"/docs\" class=\"text-blue-600 hover:underline\">Документы</a></div></nav><div class=\"max-w-7xl mx-auto px-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " — EDO Client</title><link href=\"https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css\" rel=\"stylesheet\"></head><body class=\"bg-gray-50 text-gray-900\"><nav class=\"bg-white shadow mb-6\"><div class=\"max-w-7xl mx-auto px-4 py-3 flex gap-6\"><a href=\"/certs\" class=\"text-blue-600 hover:underline\">Сертификаты</a> <a href=\"/auth\" class=\"text-blue-600 hover:underline\">Авторизация ЧЗ</a> <a href=\"/orgs\" class=\"text-blue-600 hover:underline\">Организации</a> <a href=\"/docs\" class=\"text-blue-600 hover:underline\">Документы</a></div></nav><div class=\"max-w-7xl mx-auto px-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

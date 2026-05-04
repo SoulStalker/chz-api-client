@@ -1,0 +1,54 @@
+package views
+
+import "strconv"
+
+templ Auth(thumbprint, inn, token, errMsg string) {
+	@Layout("Авторизация ЧЗ") {
+		<h1 class="text-2xl font-bold mb-4">Авторизация в ЧЗ (GIS MT)</h1>
+		<div class="bg-white shadow rounded p-6 max-w-xl">
+			<form method="POST" action="/auth" class="space-y-4">
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-1">Отпечаток сертификата (SHA1)</label>
+					<input
+						type="text"
+						name="thumbprint"
+						value={ thumbprint }
+						class="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+						placeholder="SHA1 hex thumbprint"
+						required
+					/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-1">ИНН организации (необязательно)</label>
+					<input
+						type="text"
+						name="inn"
+						value={ inn }
+						class="w-full border border-gray-300 rounded px-3 py-2"
+						placeholder="10 или 12 цифр"
+					/>
+				</div>
+				<button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+					Получить токен
+				</button>
+			</form>
+		</div>
+		if errMsg != "" {
+			<div class="mt-6 bg-red-50 border border-red-300 rounded p-4 max-w-xl">
+				<p class="text-red-700 font-medium">Ошибка авторизации</p>
+				<p class="text-red-600 text-sm mt-1 font-mono break-all">{ errMsg }</p>
+			</div>
+		}
+		if token != "" {
+			<div class="mt-6 bg-green-50 border border-green-300 rounded p-4 max-w-xl">
+				<p class="text-green-700 font-medium">Токен получен успешно</p>
+				<p class="text-sm text-gray-600 mt-1">Длина: { strconv.Itoa(len(token)) } символов</p>
+				if len(token) > 40 {
+					<p class="text-xs font-mono text-gray-700 mt-2 break-all">{ token[:40] }…</p>
+				} else {
+					<p class="text-xs font-mono text-gray-700 mt-2 break-all">{ token }</p>
+				}
+			</div>
+		}
+	}
+}

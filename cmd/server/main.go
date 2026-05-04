@@ -33,9 +33,9 @@ func main() {
 	defer signerClient.Close()
 
 	crptClient := crpt.New(cfg.CRPT.BaseURL, signerClient)
-	_ = crptClient
 
 	certsH := handlers.NewCertsHandler(signerClient)
+	authH := handlers.NewAuthHandler(crptClient, cfg.CRPT.Thumbprint, cfg.CRPT.INN)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -48,6 +48,8 @@ func main() {
 
 	app.Get("/", func(c *fiber.Ctx) error { return c.Redirect("/certs") })
 	app.Get("/certs", certsH.Handle)
+	app.Get("/auth", authH.Handle)
+	app.Post("/auth", authH.Handle)
 
 	logger.Info("starting server", "addr", cfg.Server.Addr)
 	if err := app.Listen(cfg.Server.Addr); err != nil {
