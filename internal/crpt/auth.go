@@ -42,7 +42,7 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint string) (string, e
 	}
 
 	// Шаг 2 — подписать data как есть (не декодировать из base64)
-	signedBytes, err := c.signer.Sign(ctx, []byte(keyResp.Data), thumbprint)
+	signedBytes, err := c.signer.Sign(ctx, []byte(keyResp.Data), thumbprint, "chz-api-client")
 	if err != nil {
 		return "", fmt.Errorf("crpt sign: %w", err)
 	}
