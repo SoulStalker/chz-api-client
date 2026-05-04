@@ -2,9 +2,12 @@ package crpt
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-resty/resty/v2"
 )
+
+var ErrUnauthorized = errors.New("crpt: токен истёк или недействителен")
 
 // Signer — минимальный интерфейс для подписи данных через sign-service.
 type Signer interface {

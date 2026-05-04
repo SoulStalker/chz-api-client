@@ -36,6 +36,7 @@ func main() {
 
 	certsH := handlers.NewCertsHandler(signerClient)
 	authH := handlers.NewAuthHandler(crptClient, cfg.CRPT.Thumbprint, cfg.CRPT.INN)
+	docsH := handlers.NewDocsHandler(crptClient)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -50,6 +51,7 @@ func main() {
 	app.Get("/certs", certsH.Handle)
 	app.Get("/auth", authH.Handle)
 	app.Post("/auth", authH.Handle)
+	app.Get("/docs", docsH.Handle)
 
 	logger.Info("starting server", "addr", cfg.Server.Addr)
 	if err := app.Listen(cfg.Server.Addr); err != nil {
