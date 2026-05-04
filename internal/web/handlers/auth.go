@@ -30,5 +30,11 @@ func (h *AuthHandler) Handle(c *fiber.Ctx) error {
 	if err != nil {
 		return views.Auth(thumbprint, inn, "", err.Error()).Render(c.Context(), c.Response().BodyWriter())
 	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "crpt_token",
+		Value:    token,
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
 	return views.Auth(thumbprint, inn, token, "").Render(c.Context(), c.Response().BodyWriter())
 }
