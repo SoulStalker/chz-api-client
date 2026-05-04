@@ -17,7 +17,7 @@ templ Certs(certs []model.Certificate) {
 			<tbody>
 				for _, cert := range certs {
 					<tr class="border-t">
-						<td class="px-4 py-2 font-mono text-xs">{ cert.Thumbprint[:8] }...</td>
+						<td class="px-4 py-2 font-mono text-xs">{ cert.Thumbprint }</td>
 						<td class="px-4 py-2">{ cert.Subject }</td>
 						<td class="px-4 py-2">{ cert.NotAfter }</td>
 						<td class="px-4 py-2">
