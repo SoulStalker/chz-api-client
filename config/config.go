@@ -4,19 +4,13 @@ import "github.com/ilyakaznacheev/cleanenv"
 
 type Config struct {
 	Server ServerConfig `yaml:"server"`
-	Diadoc DiadocConfig `yaml:"diadoc"`
 	CRPT   CRPTConfig   `yaml:"crpt"`
-	Signer SignerConfig `yaml:"signer"`
-	Log    LogConfig    `yaml:"log"`
+	Signer SignerConfig  `yaml:"signer"`
+	Log    LogConfig     `yaml:"log"`
 }
 
 type ServerConfig struct {
 	Addr string `yaml:"addr" env:"SERVER_ADDR" env-default:":8080"`
-}
-
-type DiadocConfig struct {
-	BaseURL  string `yaml:"base_url"  env:"DIADOC_BASE_URL"  env-default:"https://diadoc-api.kontur.ru"`
-	ClientID string `yaml:"client_id" env:"DIADOC_CLIENT_ID"`
 }
 
 type CRPTConfig struct {

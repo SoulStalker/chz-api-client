@@ -7,7 +7,6 @@ require (
 	github.com/a-h/templ v0.3.865
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gofiber/fiber/v2 v2.52.6
-	github.com/gofiber/storage/memory/v2 v2.0.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	google.golang.org/grpc v1.80.0
 )
