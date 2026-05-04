@@ -1,19 +1,13 @@
-# edo-client
+# chz-api-client
 
-Go-сервис для интеграции с системами **Диадок (Контур ЭДО)** и **Честный знак (CRPT GIS MT)**.
-
-Позволяет просматривать входящие документы ЭДО (УПД, накладные) и извлекать коды маркировки (КИЗ) из XML-содержимого документов через минималистичный веб-интерфейс.
+Go-сервис для интеграции с **Честным знаком (CRPT GIS MT True API)**.
 
 Криптографическая подпись делегирована во внешний сервис `sign-service` (gRPC, Windows Certificate Store, ГОСТ).
 
 ## Функциональность
 
-- Авторизация в Диадок (логин/пароль → Bearer token)
 - **Авторизация в Честный знак через УКЭП** (двухшаговый CAdES-BES, JWT до 10 ч)
 - Просмотр сертификатов из `sign-service`
-- Выбор организации (boxId)
-- Список входящих документов (УПД)
-- Детализация документа с извлечением КИЗ из XML (`НомСредИдентТов/КИЗ`)
 
 ## Стек
 
@@ -30,13 +24,12 @@ Go-сервис для интеграции с системами **Диадок
 ## Структура проекта
 
 ```
-edo-client/
+chz-api-client/
 ├── cmd/server/main.go           # Точка входа
 ├── config/
 │   ├── config.go                # Структуры конфига
 │   └── example.yml              # Пример конфига
 ├── internal/
-│   ├── diadoc/                  # HTTP-клиент Диадок (авторизация, документы, детализация)
 │   ├── crpt/                    # HTTP-клиент CRPT (авторизация через УКЭП, JWT)
 │   ├── signer/                  # gRPC-клиент sign-service
 │   ├── web/
@@ -66,13 +59,10 @@ cp config/example.yml config/config.yml
 server:
   addr: ":8080"
 
-diadoc:
-  base_url: "https://diadoc-api.kontur.ru"
-  client_id: "YOUR_DIADOC_CLIENT_ID"   # ключ интеграции DDauth
-
 crpt:
   base_url: "https://markirovka.crpt.ru"
   thumbprint: "195934d72dcdf..."   # SHA1 hex сертификата (CRPT_THUMBPRINT)
+  inn: "0001112223"                # ИНН организации (CRPT_INN)
 
 signer:
   addr: "localhost:50051"   # адрес sign-service gRPC
@@ -81,7 +71,7 @@ log:
   level: "info"
 ```
 
-Все параметры можно переопределить переменными окружения: `SERVER_ADDR`, `DIADOC_CLIENT_ID`, `CRPT_BASE_URL`, `CRPT_THUMBPRINT`, `SIGNER_ADDR`, `LOG_LEVEL` и др.
+Все параметры можно переопределить переменными окружения: `SERVER_ADDR`, `CRPT_BASE_URL`, `CRPT_THUMBPRINT`, `CRPT_INN`, `SIGNER_ADDR`, `LOG_LEVEL`.
 
 ## Запуск
 
@@ -104,11 +94,6 @@ make build   # сборка бинаря в ./bin/edo-client
 |---|---|---|
 | `GET` | `/` | Редирект на `/certs` |
 | `GET` | `/certs` | Список сертификатов из sign-service |
-| `POST` | `/auth` | Вход в Диадок (логин, пароль, отпечаток сертификата) |
-| `GET` | `/orgs` | Список организаций (ящиков) |
-| `POST` | `/orgs/select` | Выбор boxId → сохраняется в сессии |
-| `GET` | `/docs` | Список входящих документов (УПД) |
-| `GET` | `/docs/:messageId` | Детализация документа + список КИЗ |
 
 ## Makefile
 
@@ -119,9 +104,7 @@ make run     # Сборка + запуск
 make lint    # golangci-lint
 ```
 
-## Ограничения MVP
+## Ограничения
 
-- Нет постраничности — загружается до 50 документов
-- Сессии хранятся in-memory (перезапуск сервера сбрасывает авторизацию)
 - `sign-service` работает только на Windows (crypt32.dll, ГОСТ)
 - JWT Честного знака не кэшируется — при необходимости запрашивается заново
