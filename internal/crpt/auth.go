@@ -20,20 +20,21 @@ type signInResp struct {
 // Authenticate выполняет двухшаговый OAuth через УКЭП (CAdES-BES attached).
 // Шаг 1: GET /api/v3/auth/key → {uuid, data}
 // Шаг 2: Sign(data) → base64 → POST /api/v3/auth/simpleSignIn → JWT
-func (c *Client) Authenticate(ctx context.Context, thumbprint string) (string, error) {
+// inn — ИНН организации; обязателен если сертификат привязан к нескольким орг.
+func (c *Client) Authenticate(ctx context.Context, thumbprint, inn string) (string, error) {
 	// Шаг 1 — получить случайную строку для подписи
 	start := time.Now()
 	var keyResp authKeyResp
 	resp, err := c.http.R().
 		SetContext(ctx).
 		SetResult(&keyResp).
-		Get("/api/v3/auth/key")
+		Get("/api/v3/true-api/auth/key")
 	if err != nil {
 		return "", fmt.Errorf("crpt auth/key: %w", err)
 	}
 	slog.Info("crpt request",
 		"method", "GET",
-		"url", "/auth/key",
+		"url", "/api/v3/true-api/auth/key",
 		"status", resp.StatusCode(),
 		"duration_ms", time.Since(start).Milliseconds(),
 	)
@@ -42,7 +43,7 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint string) (string, e
 	}
 
 	// Шаг 2 — подписать data как есть (не декодировать из base64)
-	signedBytes, err := c.signer.Sign(ctx, []byte(keyResp.Data), thumbprint)
+	signedBytes, err := c.signer.Sign(ctx, []byte(keyResp.Data), thumbprint, "chz-api-client")
 	if err != nil {
 		return "", fmt.Errorf("crpt sign: %w", err)
 	}
@@ -62,15 +63,16 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint string) (string, e
 		SetBody(map[string]string{
 			"uuid": keyResp.UUID,
 			"data": signedB64,
+			"inn":  inn,
 		}).
 		SetResult(&tokenResp).
-		Post("/api/v3/auth/simpleSignIn")
+		Post("/api/v3/true-api/auth/simpleSignIn")
 	if err != nil {
 		return "", fmt.Errorf("crpt simpleSignIn: %w", err)
 	}
 	slog.Info("crpt request",
 		"method", "POST",
-		"url", "/auth/simpleSignIn",
+		"url", "/api/v3/true-api/auth/simpleSignIn",
 		"status", resp.StatusCode(),
 		"duration_ms", time.Since(start).Milliseconds(),
 	)

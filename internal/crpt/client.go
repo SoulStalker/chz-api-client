@@ -8,7 +8,7 @@ import (
 
 // Signer — минимальный интерфейс для подписи данных через sign-service.
 type Signer interface {
-	Sign(ctx context.Context, data []byte, thumbprint string) ([]byte, error)
+	Sign(ctx context.Context, data []byte, thumbprint, callerID string) ([]byte, error)
 }
 
 type Client struct {

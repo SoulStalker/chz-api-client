@@ -43,11 +43,11 @@ func (c *Client) ListCertificates(ctx context.Context) ([]model.Certificate, err
 	return certs, nil
 }
 
-func (c *Client) Sign(ctx context.Context, data []byte, thumbprint string) ([]byte, error) {
+func (c *Client) Sign(ctx context.Context, data []byte, thumbprint, callerID string) ([]byte, error) {
 	resp, err := c.signer.Sign(ctx, &pb.SignRequest{
 		Payload:    data,
 		Thumbprint: thumbprint,
-		CallerId:   "edo-client",
+		CallerId:   callerID,
 	})
 	if err != nil {
 		return nil, err
