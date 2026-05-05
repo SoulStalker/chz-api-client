@@ -3,6 +3,7 @@ package crpt
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -21,7 +22,8 @@ type signInResp struct {
 // Шаг 1: GET /api/v3/auth/key → {uuid, data}
 // Шаг 2: Sign(data) → base64 → POST /api/v3/auth/simpleSignIn → JWT
 // inn — ИНН организации, mchd — GUID МЧД (обязателен для личного сертификата).
-func (c *Client) Authenticate(ctx context.Context, thumbprint, inn, mchd string) (string, error) {
+// curlCmd — curl-эквивалент выполненных запросов (для отладки).
+func (c *Client) Authenticate(ctx context.Context, thumbprint, inn, mchd string) (token, curlCmd string, err error) {
 	// Шаг 1 — получить случайную строку для подписи
 	start := time.Now()
 	var keyResp authKeyResp
@@ -30,7 +32,7 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint, inn, mchd string)
 		SetResult(&keyResp).
 		Get("/api/v3/true-api/auth/key")
 	if err != nil {
-		return "", fmt.Errorf("crpt auth/key: %w", err)
+		return "", "", fmt.Errorf("crpt auth/key: %w", err)
 	}
 	slog.Info("crpt request",
 		"method", "GET",
@@ -39,13 +41,13 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint, inn, mchd string)
 		"duration_ms", time.Since(start).Milliseconds(),
 	)
 	if resp.IsError() {
-		return "", fmt.Errorf("crpt auth/key: status %d: %s", resp.StatusCode(), resp.Body())
+		return "", "", fmt.Errorf("crpt auth/key: status %d: %s", resp.StatusCode(), resp.Body())
 	}
 
 	// Шаг 2 — подписать data как есть (не декодировать из base64)
 	signedBytes, err := c.signer.Sign(ctx, []byte(keyResp.Data), thumbprint, "chz-api-client")
 	if err != nil {
-		return "", fmt.Errorf("crpt sign: %w", err)
+		return "", "", fmt.Errorf("crpt sign: %w", err)
 	}
 	slog.Info("sign",
 		"thumbprint", thumbprint,
@@ -68,6 +70,12 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint, inn, mchd string)
 	}
 	slog.Info("simpleSignIn body keys", "uuid", keyResp.UUID, "inn", inn, "mchd", mchd, "data_len", len(signedB64))
 
+	bodyJSON, _ := json.Marshal(body)
+	curlCmd = fmt.Sprintf(
+		"# Шаг 1 — получить challenge\ncurl -s '%s/api/v3/true-api/auth/key'\n\n# Шаг 2 — отправить подпись\ncurl -s -X POST '%s/api/v3/true-api/auth/simpleSignIn' \\\n  -H 'Content-Type: application/json' \\\n  -d '%s'",
+		c.baseURL, c.baseURL, string(bodyJSON),
+	)
+
 	start = time.Now()
 	var tokenResp signInResp
 	resp, err = c.http.R().
@@ -76,7 +84,7 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint, inn, mchd string)
 		SetResult(&tokenResp).
 		Post("/api/v3/true-api/auth/simpleSignIn")
 	if err != nil {
-		return "", fmt.Errorf("crpt simpleSignIn: %w", err)
+		return "", curlCmd, fmt.Errorf("crpt simpleSignIn: %w", err)
 	}
 	slog.Info("crpt request",
 		"method", "POST",
@@ -85,9 +93,9 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint, inn, mchd string)
 		"duration_ms", time.Since(start).Milliseconds(),
 	)
 	if resp.IsError() {
-		return "", fmt.Errorf("crpt simpleSignIn: status %d: %s", resp.StatusCode(), resp.Body())
+		return "", curlCmd, fmt.Errorf("crpt simpleSignIn: status %d: %s", resp.StatusCode(), resp.Body())
 	}
 
 	slog.Info("token received", "token_len", len(tokenResp.Token), "expires_in", "10h")
-	return tokenResp.Token, nil
+	return tokenResp.Token, curlCmd, nil
 }

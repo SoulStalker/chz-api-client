@@ -15,8 +15,9 @@ type Signer interface {
 }
 
 type Client struct {
-	http   *resty.Client
-	signer Signer
+	http    *resty.Client
+	signer  Signer
+	baseURL string
 }
 
 func New(baseURL string, signer Signer) *Client {
@@ -24,5 +25,5 @@ func New(baseURL string, signer Signer) *Client {
 		SetBaseURL(baseURL).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json")
-	return &Client{http: r, signer: signer}
+	return &Client{http: r, signer: signer, baseURL: baseURL}
 }

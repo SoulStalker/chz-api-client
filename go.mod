@@ -7,6 +7,7 @@ require (
 	github.com/a-h/templ v0.3.865
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/google/uuid v1.6.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	google.golang.org/grpc v1.80.0
 )
@@ -14,7 +15,6 @@ require (
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

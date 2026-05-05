@@ -67,13 +67,13 @@ func (c *Client) IncomingDocuments(ctx context.Context, token string, f DocFilte
 	req.SetResult(&result)
 
 	start := time.Now()
-	resp, err := req.Get("/api/v3/true-api/facade/doc")
+	resp, err := req.Get("/api/v3/true-api/facade/edo/documents")
 	if err != nil {
 		return nil, 0, fmt.Errorf("crpt facade/doc: %w", err)
 	}
 	slog.Info("crpt request",
 		"method", "GET",
-		"url", "/facade/doc",
+		"url", "/facade/edo/documents",
 		"status", resp.StatusCode(),
 		"duration_ms", time.Since(start).Milliseconds(),
 		"total", result.Total,

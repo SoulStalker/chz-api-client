@@ -2,7 +2,7 @@ package views
 
 import "strconv"
 
-templ Auth(thumbprint, inn, mchd, token, errMsg string) {
+templ Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText string) {
 	@Layout("Авторизация ЧЗ") {
 		<h1 class="text-2xl font-bold mb-4">Авторизация в ЧЗ (GIS MT)</h1>
 		<div class="bg-white shadow rounded p-6 max-w-xl">
@@ -38,6 +38,12 @@ templ Auth(thumbprint, inn, mchd, token, errMsg string) {
 						placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 					/>
 				</div>
+				<div>
+					<label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+						<input type="checkbox" name="show_curl" value="on" checked?={ showCurl } class="w-4 h-4"/>
+						Отображать curl запроса
+					</label>
+				</div>
 				<button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
 					Получить токен
 				</button>
@@ -58,6 +64,17 @@ templ Auth(thumbprint, inn, mchd, token, errMsg string) {
 				} else {
 					<p class="text-xs font-mono text-gray-700 mt-2 break-all">{ token }</p>
 				}
+				<p class="mt-3 text-sm">
+					<a href="/docs" class="text-blue-600 underline font-medium">Перейти к документам →</a>
+				</p>
+			</div>
+		}
+		if curlText != "" {
+			<div class="mt-6 max-w-xl">
+				<p class="text-sm font-medium text-gray-700 mb-2">curl команды</p>
+				<div class="bg-gray-900 rounded p-4 overflow-x-auto">
+					<pre class="text-xs text-green-400 whitespace-pre-wrap break-all">{ curlText }</pre>
+				</div>
 			</div>
 		}
 	}

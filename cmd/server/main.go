@@ -7,6 +7,7 @@ import (
 
 	"github.com/SoulStalker/chz-api-client/config"
 	"github.com/SoulStalker/chz-api-client/internal/crpt"
+	"github.com/SoulStalker/chz-api-client/internal/session"
 	internalsigner "github.com/SoulStalker/chz-api-client/internal/signer"
 	"github.com/SoulStalker/chz-api-client/internal/web/handlers"
 	"github.com/SoulStalker/chz-api-client/internal/web/middleware"
@@ -29,10 +30,11 @@ func main() {
 	defer signerClient.Close()
 
 	crptClient := crpt.New(cfg.CRPT.BaseURL, signerClient)
+	sessions := session.NewStore()
 
 	certsH := handlers.NewCertsHandler(signerClient)
-	authH := handlers.NewAuthHandler(crptClient, cfg.CRPT.Thumbprint, cfg.CRPT.INN, cfg.CRPT.MCHD)
-	docsH := handlers.NewDocsHandler(crptClient)
+	authH := handlers.NewAuthHandler(crptClient, sessions, cfg.CRPT.Thumbprint, cfg.CRPT.INN, cfg.CRPT.MCHD)
+	docsH := handlers.NewDocsHandler(crptClient, sessions)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
