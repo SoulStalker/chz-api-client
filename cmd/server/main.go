@@ -19,11 +19,7 @@ func main() {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	cfg, err := config.Load(*cfgPath)
-	if err != nil {
-		logger.Error("load config", "err", err)
-		os.Exit(1)
-	}
+	cfg := config.MustLoad(*cfgPath)
 
 	signerClient, err := internalsigner.New(cfg.Signer.Addr)
 	if err != nil {

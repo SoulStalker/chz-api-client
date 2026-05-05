@@ -1,12 +1,17 @@
 package config
 
-import "github.com/ilyakaznacheev/cleanenv"
+import (
+	"log"
+	"os"
+
+	"github.com/ilyakaznacheev/cleanenv"
+)
 
 type Config struct {
 	Server ServerConfig `yaml:"server"`
 	CRPT   CRPTConfig   `yaml:"crpt"`
-	Signer SignerConfig  `yaml:"signer"`
-	Log    LogConfig     `yaml:"log"`
+	Signer SignerConfig `yaml:"signer"`
+	Log    LogConfig    `yaml:"log"`
 }
 
 type ServerConfig struct {
@@ -28,10 +33,18 @@ type LogConfig struct {
 	Level string `yaml:"level" env:"LOG_LEVEL" env-default:"info"`
 }
 
-func Load(path string) (*Config, error) {
-	cfg := &Config{}
-	if err := cleanenv.ReadConfig(path, cfg); err != nil {
-		return nil, err
+func MustLoad(configPath string) *Config {
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		log.Fatalf("config file does not exits: %s", configPath)
 	}
-	return cfg, nil
+
+	var cfg Config
+	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+		log.Fatalf("cannot read config: %s", err)
+	}
+
+	if err := cleanenv.ReadConfig(configPath, cfg); err != nil {
+		return nil
+	}
+	return &cfg
 }

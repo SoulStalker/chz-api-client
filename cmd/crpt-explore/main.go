@@ -25,11 +25,7 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	slog.SetDefault(logger)
 
-	cfg, err := config.Load(*cfgPath)
-	if err != nil {
-		slog.Error("загрузка конфига", "err", err)
-		os.Exit(1)
-	}
+	cfg := config.MustLoad(*cfgPath)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
