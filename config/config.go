@@ -43,8 +43,5 @@ func MustLoad(configPath string) *Config {
 		log.Fatalf("cannot read config: %s", err)
 	}
 
-	if err := cleanenv.ReadConfig(configPath, cfg); err != nil {
-		return nil
-	}
 	return &cfg
 }

@@ -5,6 +5,7 @@ crpt:
   base_url: "https://markirovka.crpt.ru"
   thumbprint: "" # SHA1 hex сертификата из sign-service (CRPT_THUMBPRINT)
   inn: "0001112223" # ИНН организации (CRPT_INN)
+  mchd: ""
 
 signer:
   addr: "localhost:50051"
