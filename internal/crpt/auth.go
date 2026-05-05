@@ -20,8 +20,8 @@ type signInResp struct {
 // Authenticate выполняет двухшаговый OAuth через УКЭП (CAdES-BES attached).
 // Шаг 1: GET /api/v3/auth/key → {uuid, data}
 // Шаг 2: Sign(data) → base64 → POST /api/v3/auth/simpleSignIn → JWT
-// inn — ИНН организации; обязателен если сертификат привязан к нескольким орг.
-func (c *Client) Authenticate(ctx context.Context, thumbprint, inn string) (string, error) {
+// inn — ИНН организации, mchd — GUID МЧД (обязателен для личного сертификата).
+func (c *Client) Authenticate(ctx context.Context, thumbprint, inn, mchd string) (string, error) {
 	// Шаг 1 — получить случайную строку для подписи
 	start := time.Now()
 	var keyResp authKeyResp
@@ -63,6 +63,10 @@ func (c *Client) Authenticate(ctx context.Context, thumbprint, inn string) (stri
 	if inn != "" {
 		body["inn"] = inn
 	}
+	if mchd != "" {
+		body["mchd"] = mchd
+	}
+	slog.Info("simpleSignIn body keys", "uuid", keyResp.UUID, "inn", inn, "mchd", mchd, "data_len", len(signedB64))
 
 	start = time.Now()
 	var tokenResp signInResp

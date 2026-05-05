@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "strconv"
 
-func Auth(thumbprint, inn, token, errMsg string) templ.Component {
+func Auth(thumbprint, inn, mchd, token, errMsg string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -69,12 +69,25 @@ func Auth(thumbprint, inn, token, errMsg string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"w-full border border-gray-300 rounded px-3 py-2\" placeholder=\"10 или 12 цифр\"></div><button type=\"submit\" class=\"bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700\">Получить токен</button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"w-full border border-gray-300 rounded px-3 py-2\" placeholder=\"10 или 12 цифр\"></div><div><label class=\"block text-sm font-medium text-gray-700 mb-1\">МЧД (GUID доверенности, для личного сертификата)</label> <input type=\"text\" name=\"mchd\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_VarMchd string
+			templ_7745c5c3_VarMchd, templ_7745c5c3_Err = templ.JoinStringErrs(mchd)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth.templ`, Line: 33, Col: 17}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_VarMchd))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm\" placeholder=\"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\"></div><button type=\"submit\" class=\"bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700\">Получить токен</button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if errMsg != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"mt-6 bg-red-50 border border-red-300 rounded p-4 max-w-xl\"><p class=\"text-red-700 font-medium\">Ошибка авторизации</p><p class=\"text-red-600 text-sm mt-1 font-mono break-all\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"mt-6 bg-red-50 border border-red-300 rounded p-4 max-w-xl\"><p class=\"text-red-700 font-medium\">Ошибка авторизации</p><p class=\"text-red-600 text-sm mt-1 font-mono break-all\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -87,17 +100,17 @@ func Auth(thumbprint, inn, token, errMsg string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, " ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if token != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"mt-6 bg-green-50 border border-green-300 rounded p-4 max-w-xl\"><p class=\"text-green-700 font-medium\">Токен получен успешно</p><p class=\"text-sm text-gray-600 mt-1\">Длина: ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"mt-6 bg-green-50 border border-green-300 rounded p-4 max-w-xl\"><p class=\"text-green-700 font-medium\">Токен получен успешно</p><p class=\"text-sm text-gray-600 mt-1\">Длина: ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -110,12 +123,12 @@ func Auth(thumbprint, inn, token, errMsg string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " символов</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " символов</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if len(token) > 40 {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<p class=\"text-xs font-mono text-gray-700 mt-2 break-all\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p class=\"text-xs font-mono text-gray-700 mt-2 break-all\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -128,12 +141,12 @@ func Auth(thumbprint, inn, token, errMsg string) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "…</p>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "…</p>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p class=\"text-xs font-mono text-gray-700 mt-2 break-all\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<p class=\"text-xs font-mono text-gray-700 mt-2 break-all\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -146,12 +159,12 @@ func Auth(thumbprint, inn, token, errMsg string) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</p>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</p>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

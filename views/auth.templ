@@ -2,7 +2,7 @@ package views
 
 import "strconv"
 
-templ Auth(thumbprint, inn, token, errMsg string) {
+templ Auth(thumbprint, inn, mchd, token, errMsg string) {
 	@Layout("Авторизация ЧЗ") {
 		<h1 class="text-2xl font-bold mb-4">Авторизация в ЧЗ (GIS MT)</h1>
 		<div class="bg-white shadow rounded p-6 max-w-xl">
@@ -26,6 +26,16 @@ templ Auth(thumbprint, inn, token, errMsg string) {
 						value={ inn }
 						class="w-full border border-gray-300 rounded px-3 py-2"
 						placeholder="10 или 12 цифр"
+					/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-1">МЧД (GUID доверенности, для личного сертификата)</label>
+					<input
+						type="text"
+						name="mchd"
+						value={ mchd }
+						class="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+						placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 					/>
 				</div>
 				<button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">

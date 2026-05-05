@@ -35,7 +35,7 @@ func main() {
 	crptClient := crpt.New(cfg.CRPT.BaseURL, signerClient)
 
 	certsH := handlers.NewCertsHandler(signerClient)
-	authH := handlers.NewAuthHandler(crptClient, cfg.CRPT.Thumbprint, cfg.CRPT.INN)
+	authH := handlers.NewAuthHandler(crptClient, cfg.CRPT.Thumbprint, cfg.CRPT.INN, cfg.CRPT.MCHD)
 	docsH := handlers.NewDocsHandler(crptClient)
 
 	app := fiber.New(fiber.Config{
