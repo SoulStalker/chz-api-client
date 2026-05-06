@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/SoulStalker/chz-api-client/internal/crpt"
 	"github.com/SoulStalker/chz-api-client/internal/session"
@@ -45,8 +46,13 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 		return views.Documents(nil, false, err.Error()).Render(c.Context(), c.Response().BodyWriter())
 	}
 
+	docs := result.Results
+	sort.Slice(docs, func(i, j int) bool {
+		return docs[i].DocDate > docs[j].DocDate
+	})
+
 	c.Type("html")
-	return views.Documents(result.Results, result.NextPage, "").Render(c.Context(), c.Response().BodyWriter())
+	return views.Documents(docs, result.NextPage, "").Render(c.Context(), c.Response().BodyWriter())
 }
 
 func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {
