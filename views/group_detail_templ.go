@@ -224,9 +224,9 @@ func GroupDetail(docID, packCode, groupCode, invoiceNumber string, cis *model.Ci
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var13 string
-						templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(packTypeLabel(child.PackType))
+						templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(packTypeLabel(child.PackType, ""))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/group_detail.templ`, Line: 69, Col: 84}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/group_detail.templ`, Line: 69, Col: 88}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 						if templ_7745c5c3_Err != nil {

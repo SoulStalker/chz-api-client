@@ -42,16 +42,34 @@ func docJSON(doc *model.DocInfo) string {
 	return string(b)
 }
 
-func packTypeLabel(t string) string {
-	switch t {
+// isAggregate возвращает true если код является контейнером (нужен drill-down).
+// EXEMPLARY с quantity > 1 — это КИТУ/КИГУ, несмотря на то что CRPT API возвращает codeType "EXEMPLARY".
+func isAggregate(codeType, quantity string) bool {
+	switch codeType {
+	case "BOX", "GROUP":
+		return true
+	case "EXEMPLARY":
+		q, err := strconv.Atoi(quantity)
+		return err == nil && q > 1
+	}
+	return false
+}
+
+func packTypeLabel(codeType, quantity string) string {
+	switch codeType {
 	case "BOX":
 		return "Транспортная упаковка"
 	case "GROUP":
 		return "Групповая упаковка"
+	case "EXEMPLARY":
+		if isAggregate(codeType, quantity) {
+			return "Транспортная упаковка"
+		}
+		return "Единица товара"
 	case "UNIT", "OSU":
 		return "Единица товара"
 	default:
-		return t
+		return codeType
 	}
 }
 
@@ -59,7 +77,21 @@ func packHref(docID, code, invoiceNumber string) string {
 	return "/docs/" + docID + "/pack/" + code + "?invoice_number=" + url.QueryEscape(invoiceNumber)
 }
 
-func DocumentDetail(docID string, doc *model.DocInfo, errMsg string) templ.Component {
+func docsBackHref(fromDir string) string {
+	if fromDir == "outgoing" {
+		return "/docs/outgoing"
+	}
+	return "/docs/incoming"
+}
+
+func quantityLabel(q string) string {
+	if q == "" {
+		return "?"
+	}
+	return q
+}
+
+func DocumentDetail(docID string, doc *model.DocInfo, errMsg string, fromDir string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -92,61 +124,70 @@ func DocumentDetail(docID string, doc *model.DocInfo, errMsg string) templ.Compo
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mb-6\"><a href=\"/docs/incoming\" class=\"text-blue-600 hover:text-blue-800 text-sm font-medium\">← Документы</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mb-6\"><a href=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 templ.SafeURL = templ.SafeURL(docsBackHref(fromDir))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var3)))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"text-blue-600 hover:text-blue-800 text-sm font-medium\">← Документы</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if errMsg != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"mb-6 bg-red-50 border border-red-200 rounded-lg p-4\"><p class=\"text-red-700 font-medium text-sm\">Ошибка загрузки документа</p><p class=\"text-red-600 text-xs mt-1 font-mono\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(errMsg)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 62, Col: 59}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p></div>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if doc != nil {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"bg-white border border-gray-200 rounded-lg p-6 mb-6\"><div class=\"flex items-start justify-between mb-4\"><div><h1 class=\"text-2xl font-bold text-gray-900\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"mb-6 bg-red-50 border border-red-200 rounded-lg p-4\"><p class=\"text-red-700 font-medium text-sm\">Ошибка загрузки документа</p><p class=\"text-red-600 text-xs mt-1 font-mono\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var4 string
-				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(docTitle(doc))
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(errMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 69, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 94, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</h1><p class=\"text-gray-500 mt-1\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</p></div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if doc != nil {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"bg-white border border-gray-200 rounded-lg p-6 mb-6\"><div class=\"flex items-start justify-between mb-4\"><div><h1 class=\"text-2xl font-bold text-gray-900\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 string
-				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(senderDisplay(doc))
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(docTitle(doc))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 70, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 101, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p></div><div class=\"mt-1\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</h1><p class=\"text-gray-500 mt-1\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var6 string
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(senderDisplay(doc))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 102, Col: 56}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</p></div><div class=\"mt-1\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -154,456 +195,456 @@ func DocumentDetail(docID string, doc *model.DocInfo, errMsg string) templ.Compo
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></div><dl class=\"grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm border-t border-gray-100 pt-4\"><div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Дата документа</dt><dd class=\"text-gray-900\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var6 string
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmtDate(doc.DocDate))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 79, Col: 54}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</dd></div><div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Поставщик</dt><dd class=\"text-gray-900\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div><dl class=\"grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm border-t border-gray-100 pt-4\"><div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Дата документа</dt><dd class=\"text-gray-900\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 string
-				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(doc.SenderName)
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmtDate(doc.DocDate))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 83, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 111, Col: 54}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</dd><dd class=\"font-mono text-xs text-gray-500 mt-0.5\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</dd></div><div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Поставщик</dt><dd class=\"text-gray-900\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 string
-				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(doc.SenderInn)
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(doc.SenderName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 84, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 115, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</dd></div><div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Получатель</dt><dd class=\"text-gray-900\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</dd><dd class=\"font-mono text-xs text-gray-500 mt-0.5\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var9 string
-				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceiverName)
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(doc.SenderInn)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 88, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 116, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</dd><dd class=\"font-mono text-xs text-gray-500 mt-0.5\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</dd></div><div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Получатель</dt><dd class=\"text-gray-900\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
-				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceiverInn)
+				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceiverName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 89, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 120, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</dd></div></dl><details class=\"mt-4 border-t border-gray-100 pt-3\"><summary class=\"text-xs text-gray-400 cursor-pointer hover:text-gray-500 select-none\">Debug</summary><dl class=\"mt-2 text-xs text-gray-500 font-mono space-y-1\"><div><span class=\"text-gray-400\">number:</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</dd><dd class=\"font-mono text-xs text-gray-500 mt-0.5\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var11 string
-				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(doc.Number)
+				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceiverInn)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 95, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 121, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div><div><span class=\"text-gray-400\">receivedAt:</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</dd></div></dl><details class=\"mt-4 border-t border-gray-100 pt-3\"><summary class=\"text-xs text-gray-400 cursor-pointer hover:text-gray-500 select-none\">Debug</summary><dl class=\"mt-2 text-xs text-gray-500 font-mono space-y-1\"><div><span class=\"text-gray-400\">number:</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var12 string
-				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceivedAt)
+				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(doc.Number)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 96, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 127, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div><div><span class=\"text-gray-400\">relatedDocId:</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div><div><span class=\"text-gray-400\">receivedAt:</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var13 string
-				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(relatedDocStr(doc.RelatedDocID))
+				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceivedAt)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 97, Col: 93}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 128, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div><div><span class=\"text-gray-400\">turnoverType:</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div><div><span class=\"text-gray-400\">relatedDocId:</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var14 string
-				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(doc.TurnoverType)
+				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(relatedDocStr(doc.RelatedDocID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 98, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 129, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div></dl><pre class=\"mt-3 text-xs text-gray-500 bg-gray-50 rounded p-3 overflow-x-auto\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div><div><span class=\"text-gray-400\">turnoverType:</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var15 string
-				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(docJSON(doc))
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(doc.TurnoverType)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 100, Col: 98}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 130, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</pre></details></div><div class=\"border-b border-gray-200 mb-6\"><div class=\"flex gap-4\"><button onclick=\"showDocTab(&#39;codes&#39;)\" id=\"btn-codes\" class=\"pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600\">Коды</button> <button onclick=\"showDocTab(&#39;info&#39;)\" id=\"btn-info\" class=\"pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700\">Расширенная информация</button></div></div><div id=\"tab-codes\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div></dl><pre class=\"mt-3 text-xs text-gray-500 bg-gray-50 rounded p-3 overflow-x-auto\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var16 string
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(docJSON(doc))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 132, Col: 98}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</pre></details></div><div class=\"border-b border-gray-200 mb-6\"><div class=\"flex gap-4\"><button onclick=\"showDocTab(&#39;codes&#39;)\" id=\"btn-codes\" class=\"pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600\">Коды</button> <button onclick=\"showDocTab(&#39;info&#39;)\" id=\"btn-info\" class=\"pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700\">Расширенная информация</button></div></div><div id=\"tab-codes\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if len(doc.Body.Products) > 0 {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"bg-white border border-gray-200 rounded-lg overflow-hidden\"><div class=\"px-5 py-3 bg-gray-50 border-b border-gray-200\"><span class=\"text-xs font-semibold text-gray-500 uppercase tracking-wide\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"bg-white border border-gray-200 rounded-lg overflow-hidden\"><div class=\"px-5 py-3 bg-gray-50 border-b border-gray-200\"><span class=\"text-xs font-semibold text-gray-500 uppercase tracking-wide\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var16 string
-					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(doc.Body.Products)))
+					var templ_7745c5c3_Var17 string
+					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(doc.Body.Products)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 121, Col: 119}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 153, Col: 119}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, " позиций</span></div><table class=\"w-full text-sm\"><thead><tr class=\"border-b border-gray-200\"><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Код</th><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">GTIN</th><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Наименование</th><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Тип упаковки</th><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Содержит</th></tr></thead> <tbody class=\"divide-y divide-gray-100\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " позиций</span></div><table class=\"w-full text-sm\"><thead><tr class=\"border-b border-gray-200\"><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Код</th><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">GTIN</th><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Наименование</th><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Тип упаковки</th><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Содержит</th></tr></thead> <tbody class=\"divide-y divide-gray-100\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					for _, p := range doc.Body.Products {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<tr class=\"hover:bg-gray-50\"><td class=\"px-5 py-3\"><code class=\"font-mono text-xs text-gray-700 break-all\">")
-						if templ_7745c5c3_Err != nil {
-							return templ_7745c5c3_Err
-						}
-						var templ_7745c5c3_Var17 string
-						templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(p.Code)
-						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 136, Col: 96}
-						}
-						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
-						if templ_7745c5c3_Err != nil {
-							return templ_7745c5c3_Err
-						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</code></td><td class=\"px-5 py-3 font-mono text-xs text-gray-500\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<tr class=\"hover:bg-gray-50\"><td class=\"px-5 py-3\"><code class=\"font-mono text-xs text-gray-700 break-all\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var18 string
-						templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(p.GTIN)
+						templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(p.Code)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 137, Col: 72}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 168, Col: 96}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</td><td class=\"px-5 py-3 text-gray-800 text-xs\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</code></td><td class=\"px-5 py-3 font-mono text-xs text-gray-500\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var19 string
-						templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(p.Name)
+						templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(p.GTIN)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 138, Col: 62}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 169, Col: 72}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</td><td class=\"px-5 py-3 text-xs text-gray-500\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</td><td class=\"px-5 py-3 text-gray-800 text-xs\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var20 string
-						templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(packTypeLabel(p.CodeType))
+						templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(p.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 139, Col: 81}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 170, Col: 62}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</td><td class=\"px-5 py-3\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</td><td class=\"px-5 py-3 text-xs text-gray-500\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						if p.CodeType == "BOX" || p.CodeType == "GROUP" {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<a href=\"")
+						var templ_7745c5c3_Var21 string
+						templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(packTypeLabel(p.CodeType, p.Quantity))
+						if templ_7745c5c3_Err != nil {
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 171, Col: 93}
+						}
+						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+						if templ_7745c5c3_Err != nil {
+							return templ_7745c5c3_Err
+						}
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</td><td class=\"px-5 py-3\">")
+						if templ_7745c5c3_Err != nil {
+							return templ_7745c5c3_Err
+						}
+						if isAggregate(p.CodeType, p.Quantity) {
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<a href=\"")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
-							var templ_7745c5c3_Var21 templ.SafeURL = templ.SafeURL(packHref(docID, p.Code, docTitle(doc)))
-							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var21)))
+							var templ_7745c5c3_Var22 templ.SafeURL = templ.SafeURL(packHref(docID, p.Code, docTitle(doc)))
+							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var22)))
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" class=\"text-blue-600 hover:text-blue-800 text-xs font-medium\">[")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" class=\"text-blue-600 hover:text-blue-800 text-xs font-medium\">[")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
-							var templ_7745c5c3_Var22 string
-							templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(p.Quantity)
+							var templ_7745c5c3_Var23 string
+							templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(quantityLabel(p.Quantity))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 142, Col: 153}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 174, Col: 168}
 							}
-							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "] вложений →</a>")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "] вложений →</a>")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						} else {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"text-gray-300\">—</span>")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<span class=\"text-gray-300\">—</span>")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</td></tr>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</td></tr>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</tbody></table></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</tbody></table></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else if len(doc.Body.CisesList) > 0 {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<div class=\"bg-white border border-gray-200 rounded-lg overflow-hidden\"><div class=\"px-5 py-3 bg-gray-50 border-b border-gray-200\"><span class=\"text-xs font-semibold text-gray-500 uppercase tracking-wide\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<div class=\"bg-white border border-gray-200 rounded-lg overflow-hidden\"><div class=\"px-5 py-3 bg-gray-50 border-b border-gray-200\"><span class=\"text-xs font-semibold text-gray-500 uppercase tracking-wide\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var23 string
-					templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(doc.Body.CisesList)))
+					var templ_7745c5c3_Var24 string
+					templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(doc.Body.CisesList)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 155, Col: 120}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 187, Col: 120}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, " КИ</span></div><table class=\"w-full text-sm\"><thead><tr class=\"border-b border-gray-200\"><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Код маркировки</th></tr></thead> <tbody class=\"divide-y divide-gray-100\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, " КИ</span></div><table class=\"w-full text-sm\"><thead><tr class=\"border-b border-gray-200\"><th class=\"px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide\">Код маркировки</th></tr></thead> <tbody class=\"divide-y divide-gray-100\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					for _, cis := range doc.Body.CisesList {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<tr class=\"hover:bg-gray-50\"><td class=\"px-5 py-3\"><code class=\"font-mono text-xs text-gray-700 break-all\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<tr class=\"hover:bg-gray-50\"><td class=\"px-5 py-3\"><code class=\"font-mono text-xs text-gray-700 break-all\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						var templ_7745c5c3_Var24 string
-						templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(cis)
+						var templ_7745c5c3_Var25 string
+						templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(cis)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 166, Col: 93}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 198, Col: 93}
 						}
-						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</code></td></tr>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</code></td></tr>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</tbody></table></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</tbody></table></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<div class=\"bg-white border border-gray-200 rounded-lg p-12 text-center\"><p class=\"text-gray-400 text-sm\">Позиций не найдено</p></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<div class=\"bg-white border border-gray-200 rounded-lg p-12 text-center\"><p class=\"text-gray-400 text-sm\">Позиций не найдено</p></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</div><div id=\"tab-info\" class=\"hidden\"><div class=\"bg-white border border-gray-200 rounded-lg p-6\"><dl class=\"grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-5 text-sm\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div><div id=\"tab-info\" class=\"hidden\"><div class=\"bg-white border border-gray-200 rounded-lg p-6\"><dl class=\"grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-5 text-sm\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if doc.Body.UPD != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Номер УПД</dt><dd class=\"text-gray-900 font-mono\">")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var25 string
-					templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(doc.Body.UPD)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 184, Col: 58}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</dd></div>")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				if doc.Body.UPDDate != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Дата УПД</dt><dd class=\"text-gray-900\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Номер УПД</dt><dd class=\"text-gray-900 font-mono\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var26 string
-					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmtDate(doc.Body.UPDDate))
+					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(doc.Body.UPD)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 190, Col: 61}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 216, Col: 58}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</dd></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</dd></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				if doc.Body.AcceptanceCode != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Код приёмки</dt><dd class=\"text-gray-900 font-mono\">")
+				if doc.Body.UPDDate != "" {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Дата УПД</dt><dd class=\"text-gray-900\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var27 string
-					templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(doc.Body.AcceptanceCode)
+					templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmtDate(doc.Body.UPDDate))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 196, Col: 69}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 222, Col: 61}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</dd></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</dd></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				if doc.Body.SumNds != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Сумма НДС</dt><dd class=\"text-gray-900\">")
+				if doc.Body.AcceptanceCode != "" {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Код приёмки</dt><dd class=\"text-gray-900 font-mono\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var28 string
-					templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(doc.Body.SumNds)
+					templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(doc.Body.AcceptanceCode)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 202, Col: 51}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 228, Col: 69}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</dd></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</dd></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				if doc.TurnoverType != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Вид оборота</dt><dd class=\"text-gray-900\">")
+				if doc.Body.SumNds != "" {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Сумма НДС</dt><dd class=\"text-gray-900\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var29 string
-					templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(doc.TurnoverType)
+					templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(doc.Body.SumNds)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 208, Col: 52}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 234, Col: 51}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</dd></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</dd></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Поставщик</dt><dd class=\"text-gray-900\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
+				if doc.TurnoverType != "" {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Вид оборота</dt><dd class=\"text-gray-900\">")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var30 string
+					templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(doc.TurnoverType)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 240, Col: 52}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</dd></div>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
 				}
-				var templ_7745c5c3_Var30 string
-				templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(doc.SenderName)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 213, Col: 49}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</dd><dd class=\"font-mono text-xs text-gray-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Поставщик</dt><dd class=\"text-gray-900\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var31 string
-				templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(doc.SenderInn)
+				templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(doc.SenderName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 214, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 245, Col: 49}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</dd></div><div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Получатель</dt><dd class=\"text-gray-900\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</dd><dd class=\"font-mono text-xs text-gray-500\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var32 string
-				templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceiverName)
+				templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(doc.SenderInn)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 218, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 246, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</dd><dd class=\"font-mono text-xs text-gray-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</dd></div><div><dt class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1\">Получатель</dt><dd class=\"text-gray-900\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var33 string
-				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceiverInn)
+				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceiverName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 219, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 250, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</dd></div></dl></div></div><script>\n\t\t\t\tfunction showDocTab(name) {\n\t\t\t\t\tdocument.getElementById('tab-codes').classList.toggle('hidden', name !== 'codes');\n\t\t\t\t\tdocument.getElementById('tab-info').classList.toggle('hidden', name !== 'info');\n\t\t\t\t\tvar active = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';\n\t\t\t\t\tvar inactive = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';\n\t\t\t\t\tdocument.getElementById('btn-codes').className = name === 'codes' ? active : inactive;\n\t\t\t\t\tdocument.getElementById('btn-info').className = name === 'info' ? active : inactive;\n\t\t\t\t}\n\t\t\t</script>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</dd><dd class=\"font-mono text-xs text-gray-500\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var34 string
+				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(doc.ReceiverInn)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/document_detail.templ`, Line: 251, Col: 68}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</dd></div></dl></div></div><script>\n\t\t\t\tfunction showDocTab(name) {\n\t\t\t\t\tdocument.getElementById('tab-codes').classList.toggle('hidden', name !== 'codes');\n\t\t\t\t\tdocument.getElementById('tab-info').classList.toggle('hidden', name !== 'info');\n\t\t\t\t\tvar active = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';\n\t\t\t\t\tvar inactive = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';\n\t\t\t\t\tdocument.getElementById('btn-codes').className = name === 'codes' ? active : inactive;\n\t\t\t\t\tdocument.getElementById('btn-info').className = name === 'info' ? active : inactive;\n\t\t\t\t}\n\t\t\t</script>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

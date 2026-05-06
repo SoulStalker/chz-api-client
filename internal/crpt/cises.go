@@ -30,8 +30,12 @@ func (c *Client) GetCisInfo(ctx context.Context, token string, codes []string) (
 	if resp.StatusCode() == 401 {
 		return nil, ErrUnauthorized
 	}
+	if resp.StatusCode() == 404 {
+		slog.Warn("crpt cises/info 404", "codes", codes)
+		return nil, fmt.Errorf("crpt cises/info: КИ не найдены")
+	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("crpt cises/info: status %d: %s", resp.StatusCode(), resp.Body())
+		return nil, httpErr("POST", "/api/v3/true-api/cises/info", resp.StatusCode(), resp.Body())
 	}
 	return result, nil
 }

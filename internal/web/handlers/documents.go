@@ -12,6 +12,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func errMsg(err error) string {
+	switch {
+	case errors.Is(err, crpt.ErrForbidden):
+		return "Нет доступа — проверьте права сертификата"
+	case errors.Is(err, crpt.ErrServiceUnavailable):
+		return "Сервис временно недоступен, попробуйте позже"
+	default:
+		return err.Error()
+	}
+}
+
 type DocsHandler struct {
 	crpt     *crpt.Client
 	sessions *session.Store
@@ -76,8 +87,9 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 		if errors.Is(err, crpt.ErrUnauthorized) {
 			return c.Redirect("/auth")
 		}
+		msg := errMsg(err)
 		c.Type("html")
-		return views.Documents(nil, false, err.Error(), isIncoming, displayDateFrom, displayDateTo, "", "").Render(c.Context(), c.Response().BodyWriter())
+		return views.Documents(nil, false, msg, isIncoming, displayDateFrom, displayDateTo, "", "").Render(c.Context(), c.Response().BodyWriter())
 	}
 
 	var nextDID, nextOCV string
@@ -98,15 +110,17 @@ func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {
 	}
 
 	docID := c.Params("id")
+	from := c.Query("from", "incoming")
+
 	info, err := h.crpt.GetDocumentInfo(c.Context(), token, docID, "water")
 	if err != nil {
 		if errors.Is(err, crpt.ErrUnauthorized) {
 			return c.Redirect("/auth")
 		}
 		c.Type("html")
-		return views.DocumentDetail(docID, nil, err.Error()).Render(c.Context(), c.Response().BodyWriter())
+		return views.DocumentDetail(docID, nil, errMsg(err), from).Render(c.Context(), c.Response().BodyWriter())
 	}
 
 	c.Type("html")
-	return views.DocumentDetail(docID, info, "").Render(c.Context(), c.Response().BodyWriter())
+	return views.DocumentDetail(docID, info, "", from).Render(c.Context(), c.Response().BodyWriter())
 }

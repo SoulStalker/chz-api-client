@@ -7,7 +7,11 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-var ErrUnauthorized = errors.New("crpt: токен истёк или недействителен")
+var (
+	ErrUnauthorized      = errors.New("crpt: токен истёк или недействителен")
+	ErrForbidden         = errors.New("crpt: нет доступа — проверьте права сертификата")
+	ErrServiceUnavailable = errors.New("crpt: сервис временно недоступен")
+)
 
 // Signer — минимальный интерфейс для подписи данных через sign-service.
 type Signer interface {

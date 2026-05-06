@@ -1,11 +1,19 @@
 package views
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 
 	"github.com/SoulStalker/chz-api-client/internal/model"
 )
+
+func childCountLabel(n int) string {
+	if n > 0 {
+		return fmt.Sprintf("[%d] вложений", n)
+	}
+	return "Вложения"
+}
 
 func groupHref(docID, packCode, childCisKey, invoiceNumber string) string {
 	return "/docs/" + docID + "/pack/" + packCode + "/group/" + childCisKey + "?invoice_number=" + url.QueryEscape(invoiceNumber)
@@ -71,11 +79,11 @@ templ PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errM
 											<p class="text-xs text-gray-400 mt-0.5">{ child.Name }</p>
 										}
 									</td>
-									<td class="px-5 py-3 text-xs text-gray-500">{ packTypeLabel(child.PackType) }</td>
+									<td class="px-5 py-3 text-xs text-gray-500">{ packTypeLabel(child.PackType, "") }</td>
 									<td class="px-5 py-3 font-mono text-xs text-gray-500">{ child.GTIN }</td>
 									<td class="px-5 py-3">
 										if child.PackType == "GROUP" {
-											<a href={ templ.SafeURL(groupHref(docID, packCode, child.CisKey, invoiceNumber)) } class="text-blue-600 hover:text-blue-800 text-xs font-medium">Вложения →</a>
+											<a href={ templ.SafeURL(groupHref(docID, packCode, child.CisKey, invoiceNumber)) } class="text-blue-600 hover:text-blue-800 text-xs font-medium">{ childCountLabel(child.ChildCount) } →</a>
 										} else {
 											<span class="text-gray-300">—</span>
 										}

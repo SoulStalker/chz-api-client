@@ -9,6 +9,16 @@ import (
 	"github.com/SoulStalker/chz-api-client/internal/model"
 )
 
+func httpErr(method, url string, statusCode int, body []byte) error {
+	switch {
+	case statusCode == 403:
+		return ErrForbidden
+	case statusCode >= 500:
+		return ErrServiceUnavailable
+	}
+	return fmt.Errorf("%s %s: status %d: %s", method, url, statusCode, body)
+}
+
 func (c *Client) ListDocuments(ctx context.Context, token string, p model.DocListParams) (*model.DocListResponse, error) {
 	if p.Limit == 0 {
 		p.Limit = 50
@@ -48,8 +58,12 @@ func (c *Client) ListDocuments(ctx context.Context, token string, p model.DocLis
 	if resp.StatusCode() == 401 {
 		return nil, ErrUnauthorized
 	}
+	if resp.StatusCode() == 404 {
+		slog.Warn("crpt doc/list 404", "url", c.http.HostURL+"/api/v4/true-api/doc/list")
+		return nil, fmt.Errorf("crpt doc/list: не найдено")
+	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("crpt doc/list: status %d: %s", resp.StatusCode(), resp.Body())
+		return nil, httpErr("GET", "/api/v4/true-api/doc/list", resp.StatusCode(), resp.Body())
 	}
 	return &result, nil
 }
@@ -76,8 +90,12 @@ func (c *Client) GetDocumentInfo(ctx context.Context, token, docID, pg string) (
 	if resp.StatusCode() == 401 {
 		return nil, ErrUnauthorized
 	}
+	if resp.StatusCode() == 404 {
+		slog.Warn("crpt doc/info 404", "url", c.http.HostURL+"/api/v4/true-api/doc/"+docID+"/info")
+		return nil, fmt.Errorf("crpt doc/info: документ %s не найден", docID)
+	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("crpt doc/info: status %d: %s", resp.StatusCode(), resp.Body())
+		return nil, httpErr("GET", "/api/v4/true-api/doc/"+docID+"/info", resp.StatusCode(), resp.Body())
 	}
 	if len(results) == 0 {
 		return nil, fmt.Errorf("crpt doc/info: пустой ответ для документа %s", docID)

@@ -34,16 +34,34 @@ func docJSON(doc *model.DocInfo) string {
 	return string(b)
 }
 
-func packTypeLabel(t string) string {
-	switch t {
+// isAggregate возвращает true если код является контейнером (нужен drill-down).
+// EXEMPLARY с quantity > 1 — это КИТУ/КИГУ, несмотря на то что CRPT API возвращает codeType "EXEMPLARY".
+func isAggregate(codeType, quantity string) bool {
+	switch codeType {
+	case "BOX", "GROUP":
+		return true
+	case "EXEMPLARY":
+		q, err := strconv.Atoi(quantity)
+		return err == nil && q > 1
+	}
+	return false
+}
+
+func packTypeLabel(codeType, quantity string) string {
+	switch codeType {
 	case "BOX":
 		return "Транспортная упаковка"
 	case "GROUP":
 		return "Групповая упаковка"
+	case "EXEMPLARY":
+		if isAggregate(codeType, quantity) {
+			return "Транспортная упаковка"
+		}
+		return "Единица товара"
 	case "UNIT", "OSU":
 		return "Единица товара"
 	default:
-		return t
+		return codeType
 	}
 }
 
@@ -51,10 +69,24 @@ func packHref(docID, code, invoiceNumber string) string {
 	return "/docs/" + docID + "/pack/" + code + "?invoice_number=" + url.QueryEscape(invoiceNumber)
 }
 
-templ DocumentDetail(docID string, doc *model.DocInfo, errMsg string) {
+func docsBackHref(fromDir string) string {
+	if fromDir == "outgoing" {
+		return "/docs/outgoing"
+	}
+	return "/docs/incoming"
+}
+
+func quantityLabel(q string) string {
+	if q == "" {
+		return "?"
+	}
+	return q
+}
+
+templ DocumentDetail(docID string, doc *model.DocInfo, errMsg string, fromDir string) {
 	@Layout("Документ", "docs") {
 		<div class="mb-6">
-			<a href="/docs/incoming" class="text-blue-600 hover:text-blue-800 text-sm font-medium">← Документы</a>
+			<a href={ templ.SafeURL(docsBackHref(fromDir)) } class="text-blue-600 hover:text-blue-800 text-sm font-medium">← Документы</a>
 		</div>
 		if errMsg != "" {
 			<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -136,10 +168,10 @@ templ DocumentDetail(docID string, doc *model.DocInfo, errMsg string) {
 										<td class="px-5 py-3"><code class="font-mono text-xs text-gray-700 break-all">{ p.Code }</code></td>
 										<td class="px-5 py-3 font-mono text-xs text-gray-500">{ p.GTIN }</td>
 										<td class="px-5 py-3 text-gray-800 text-xs">{ p.Name }</td>
-										<td class="px-5 py-3 text-xs text-gray-500">{ packTypeLabel(p.CodeType) }</td>
+										<td class="px-5 py-3 text-xs text-gray-500">{ packTypeLabel(p.CodeType, p.Quantity) }</td>
 										<td class="px-5 py-3">
-											if p.CodeType == "BOX" || p.CodeType == "GROUP" {
-												<a href={ templ.SafeURL(packHref(docID, p.Code, docTitle(doc))) } class="text-blue-600 hover:text-blue-800 text-xs font-medium">[{ p.Quantity }] вложений →</a>
+											if isAggregate(p.CodeType, p.Quantity) {
+												<a href={ templ.SafeURL(packHref(docID, p.Code, docTitle(doc))) } class="text-blue-600 hover:text-blue-800 text-xs font-medium">[{ quantityLabel(p.Quantity) }] вложений →</a>
 											} else {
 												<span class="text-gray-300">—</span>
 											}

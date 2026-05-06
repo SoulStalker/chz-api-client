@@ -42,7 +42,7 @@ func (h *PacksHandler) ShowPack(c *fiber.Ctx) error {
 			return c.Redirect("/auth")
 		}
 		c.Type("html")
-		return views.PackDetail(docID, packCode, invoiceNumber, nil, err.Error()).Render(c.Context(), c.Response().BodyWriter())
+		return views.PackDetail(docID, packCode, invoiceNumber, nil, errMsg(err)).Render(c.Context(), c.Response().BodyWriter())
 	}
 	if len(cisInfos) == 0 {
 		c.Type("html")
@@ -70,7 +70,7 @@ func (h *PacksHandler) ShowGroup(c *fiber.Ctx) error {
 			return c.Redirect("/auth")
 		}
 		c.Type("html")
-		return views.GroupDetail(docID, packCode, groupCode, invoiceNumber, nil, err.Error()).Render(c.Context(), c.Response().BodyWriter())
+		return views.GroupDetail(docID, packCode, groupCode, invoiceNumber, nil, errMsg(err)).Render(c.Context(), c.Response().BodyWriter())
 	}
 	if len(cisInfos) == 0 {
 		c.Type("html")

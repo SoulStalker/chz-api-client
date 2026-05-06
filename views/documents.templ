@@ -51,6 +51,13 @@ func routeForDir(isIncoming bool) string {
 	return "/docs/outgoing"
 }
 
+func docDirection(isIncoming bool) string {
+	if isIncoming {
+		return "incoming"
+	}
+	return "outgoing"
+}
+
 templ StatusBadge(s string) {
 	switch s {
 	case "CHECKED_OK":
@@ -130,7 +137,7 @@ templ Documents(docs []model.Document, nextPage bool, errMsg string, isIncoming 
 									<td class="px-5 py-3 text-gray-600">{ docTypeLabel(doc.Type) }</td>
 									<td class="px-5 py-3">@StatusBadge(doc.Status)</td>
 									<td class="px-5 py-3 text-right">
-										<a href={ templ.SafeURL("/docs/" + doc.Number) } class="text-blue-600 hover:text-blue-800 text-xs font-medium">Детали →</a>
+										<a href={ templ.SafeURL("/docs/" + doc.Number + "?from=" + docDirection(isIncoming)) } class="text-blue-600 hover:text-blue-800 text-xs font-medium">Детали →</a>
 									</td>
 								</tr>
 							}

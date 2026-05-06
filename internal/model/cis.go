@@ -10,8 +10,9 @@ type CisInfo struct {
 }
 
 type CisChild struct {
-	CisKey   string `json:"cisKey"`
-	GTIN     string `json:"gtin"`
-	Name     string `json:"name"`
-	PackType string `json:"packType"`
+	CisKey     string `json:"cisKey"`
+	GTIN       string `json:"gtin"`
+	Name       string `json:"name"`
+	PackType   string `json:"packType"`
+	ChildCount int    `json:"childCount"`
 }

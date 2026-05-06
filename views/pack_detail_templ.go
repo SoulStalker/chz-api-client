@@ -9,11 +9,19 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 
 	"github.com/SoulStalker/chz-api-client/internal/model"
 )
+
+func childCountLabel(n int) string {
+	if n > 0 {
+		return fmt.Sprintf("[%d] вложений", n)
+	}
+	return "Вложения"
+}
 
 func groupHref(docID, packCode, childCisKey, invoiceNumber string) string {
 	return "/docs/" + docID + "/pack/" + packCode + "/group/" + childCisKey + "?invoice_number=" + url.QueryEscape(invoiceNumber)
@@ -68,7 +76,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(invoiceNumber)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 19, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 27, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -86,7 +94,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(errMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 26, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 34, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -109,7 +117,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(packCode)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 32, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 40, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -127,7 +135,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(cis.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 34, Col: 53}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 42, Col: 53}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
@@ -150,7 +158,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 					var templ_7745c5c3_Var8 string
 					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(cis.GTIN)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 40, Col: 53}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 48, Col: 53}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 					if templ_7745c5c3_Err != nil {
@@ -168,7 +176,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(cis.ChildCount))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 45, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 53, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -196,7 +204,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 						var templ_7745c5c3_Var10 string
 						templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(child.CisKey)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 69, Col: 80}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 77, Col: 80}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 						if templ_7745c5c3_Err != nil {
@@ -214,7 +222,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 							var templ_7745c5c3_Var11 string
 							templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(child.Name)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 71, Col: 63}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 79, Col: 63}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 							if templ_7745c5c3_Err != nil {
@@ -230,9 +238,9 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var12 string
-						templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(packTypeLabel(child.PackType))
+						templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(packTypeLabel(child.PackType, ""))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 74, Col: 84}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 82, Col: 88}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 						if templ_7745c5c3_Err != nil {
@@ -245,7 +253,7 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 						var templ_7745c5c3_Var13 string
 						templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(child.GTIN)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 75, Col: 75}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 83, Col: 75}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 						if templ_7745c5c3_Err != nil {
@@ -265,22 +273,35 @@ func PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMs
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" class=\"text-blue-600 hover:text-blue-800 text-xs font-medium\">Вложения →</a>")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" class=\"text-blue-600 hover:text-blue-800 text-xs font-medium\">")
+							if templ_7745c5c3_Err != nil {
+								return templ_7745c5c3_Err
+							}
+							var templ_7745c5c3_Var15 string
+							templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(childCountLabel(child.ChildCount))
+							if templ_7745c5c3_Err != nil {
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/pack_detail.templ`, Line: 86, Col: 191}
+							}
+							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+							if templ_7745c5c3_Err != nil {
+								return templ_7745c5c3_Err
+							}
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, " →</a>")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						} else {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span class=\"text-gray-300\">—</span>")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<span class=\"text-gray-300\">—</span>")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</td></tr>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</td></tr>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</tbody></table></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</tbody></table></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
