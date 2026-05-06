@@ -1,14 +1,36 @@
 package model
 
+type DocListResponse struct {
+	Results  []Document `json:"results"`
+	NextPage bool       `json:"nextPage"`
+}
+
 type Document struct {
-	ID               string
-	Type             string
-	Status           string
-	SenderName       string
-	SenderINN        string
-	ReceiverName     string
-	ReceiverINN      string
-	DocDate          string
-	CreatedTimestamp int64
-	TotalItems       int
+	Number    string `json:"number"`
+	Type      string `json:"type"`
+	DocDate   string `json:"docDate"`
+	SenderInn string `json:"senderInn"`
+	Status    string `json:"status"`
+}
+
+type DocInfoResponse struct {
+	Number    string  `json:"number"`
+	Type      string  `json:"type"`
+	DocDate   string  `json:"docDate"`
+	SenderInn string  `json:"senderInn"`
+	Status    string  `json:"status"`
+	Body      DocBody `json:"body"`
+}
+
+type DocBody struct {
+	Products  []Product `json:"products"`
+	CisesList []string  `json:"cisesList"`
+}
+
+type Product struct {
+	Code     string `json:"code"`
+	Name     string `json:"name"`
+	CodeType string `json:"codeType"`
+	GTIN     string `json:"gtin"`
+	Quantity string `json:"quantity"`
 }

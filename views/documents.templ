@@ -1,8 +1,6 @@
 package views
 
 import (
-	"fmt"
-	"strconv"
 	"github.com/SoulStalker/chz-api-client/internal/model"
 )
 
@@ -20,58 +18,9 @@ func statusLabel(s string) string {
 	return s
 }
 
-func pageURL(dateFrom, dateTo, status string, pageNum, pageSize int) string {
-	return fmt.Sprintf("/docs?date_from=%s&date_to=%s&status=%s&page_num=%d&page_size=%d",
-		dateFrom, dateTo, status, pageNum, pageSize)
-}
-
-templ Documents(docs []model.Document, total int, dateFrom, dateTo, status string, pageNum, pageSize int, errMsg string) {
+templ Documents(docs []model.Document, nextPage bool, errMsg string) {
 	@Layout("Входящие документы") {
-		<h1 class="text-2xl font-bold mb-4">Входящие документы с марками</h1>
-		<div class="bg-white shadow rounded p-4 mb-6">
-			<form method="GET" action="/docs" class="flex flex-wrap gap-4 items-end">
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Дата от</label>
-					<input
-						type="date"
-						name="date_from"
-						value={ dateFrom }
-						class="border border-gray-300 rounded px-3 py-1.5 text-sm"
-					/>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Дата до</label>
-					<input
-						type="date"
-						name="date_to"
-						value={ dateTo }
-						class="border border-gray-300 rounded px-3 py-1.5 text-sm"
-					/>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
-					<select name="status" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
-						<option value="" if status == "" { selected }>Все</option>
-						<option value="WAIT_ACCEPTANCE" if status == "WAIT_ACCEPTANCE" { selected }>Ожидает приёмки</option>
-						<option value="ACCEPTED" if status == "ACCEPTED" { selected }>Принято</option>
-						<option value="REJECTED" if status == "REJECTED" { selected }>Отклонено</option>
-						<option value="CANCELLED" if status == "CANCELLED" { selected }>Отменено</option>
-					</select>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">На странице</label>
-					<select name="page_size" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
-						<option value="15" if pageSize == 15 { selected }>15</option>
-						<option value="30" if pageSize == 30 { selected }>30</option>
-						<option value="50" if pageSize == 50 { selected }>50</option>
-						<option value="100" if pageSize == 100 { selected }>100</option>
-					</select>
-				</div>
-				<button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">
-					Применить
-				</button>
-			</form>
-		</div>
+		<h1 class="text-2xl font-bold mb-4">Входящие документы</h1>
 		if errMsg != "" {
 			<div class="mb-4 bg-red-50 border border-red-300 rounded p-4">
 				<p class="text-red-700 font-medium">Ошибка загрузки документов</p>
@@ -79,9 +28,6 @@ templ Documents(docs []model.Document, total int, dateFrom, dateTo, status strin
 			</div>
 		}
 		if docs != nil {
-			<p class="text-sm text-gray-500 mb-3">
-				Найдено: { strconv.Itoa(total) } документов, страница { strconv.Itoa(pageNum+1) }
-			</p>
 			if len(docs) == 0 {
 				<div class="bg-white shadow rounded p-8 text-center text-gray-500">
 					Документов не найдено
@@ -91,40 +37,29 @@ templ Documents(docs []model.Document, total int, dateFrom, dateTo, status strin
 					<table class="w-full bg-white shadow rounded text-sm">
 						<thead class="bg-gray-100">
 							<tr>
-								<th class="px-4 py-2 text-left">Дата</th>
+								<th class="px-4 py-2 text-left">Номер</th>
 								<th class="px-4 py-2 text-left">Тип</th>
-								<th class="px-4 py-2 text-left">Статус</th>
-								<th class="px-4 py-2 text-left">Отправитель</th>
+								<th class="px-4 py-2 text-left">Дата</th>
 								<th class="px-4 py-2 text-left">ИНН отправителя</th>
-								<th class="px-4 py-2 text-right">Марок</th>
+								<th class="px-4 py-2 text-left">Статус</th>
+								<th class="px-4 py-2 text-left">Детали</th>
 							</tr>
 						</thead>
 						<tbody>
 							for _, doc := range docs {
 								<tr class="border-t hover:bg-gray-50">
-									<td class="px-4 py-2 whitespace-nowrap">{ doc.DocDate }</td>
+									<td class="px-4 py-2 font-mono text-xs">{ doc.Number }</td>
 									<td class="px-4 py-2 font-mono text-xs">{ doc.Type }</td>
+									<td class="px-4 py-2 whitespace-nowrap">{ doc.DocDate }</td>
+									<td class="px-4 py-2 font-mono text-xs">{ doc.SenderInn }</td>
 									<td class="px-4 py-2">{ statusLabel(doc.Status) }</td>
-									<td class="px-4 py-2">{ doc.SenderName }</td>
-									<td class="px-4 py-2 font-mono text-xs">{ doc.SenderINN }</td>
-									<td class="px-4 py-2 text-right">{ strconv.Itoa(doc.TotalItems) }</td>
+									<td class="px-4 py-2">
+										<a href={ templ.SafeURL("/docs/" + doc.Number) } class="text-blue-600 hover:underline text-xs">Детали</a>
+									</td>
 								</tr>
 							}
 						</tbody>
 					</table>
-				</div>
-				<div class="flex items-center gap-3 mt-4">
-					if pageNum > 0 {
-						<a href={ templ.SafeURL(pageURL(dateFrom, dateTo, status, pageNum-1, pageSize)) } class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100">
-							← Назад
-						</a>
-					}
-					<span class="text-sm text-gray-600">Страница { strconv.Itoa(pageNum+1) }</span>
-					if (pageNum+1)*pageSize < total {
-						<a href={ templ.SafeURL(pageURL(dateFrom, dateTo, status, pageNum+1, pageSize)) } class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100">
-							Вперёд →
-						</a>
-					}
 				</div>
 			}
 		}

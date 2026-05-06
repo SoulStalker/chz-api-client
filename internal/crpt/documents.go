@@ -4,101 +4,78 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"github.com/SoulStalker/chz-api-client/internal/model"
 )
 
-type DocFilter struct {
-	DateFrom string
-	DateTo   string
-	Type     string
-	Status   string
-	PageNum  int
-	PageSize int
+type DocListParams struct {
+	PG    string
+	Input bool
+	Limit int
 }
 
-type docItem struct {
-	ID               string `json:"id"`
-	Type             string `json:"type"`
-	Status           string `json:"status"`
-	SenderName       string `json:"senderName"`
-	SenderINN        string `json:"senderInn"`
-	ReceiverName     string `json:"receiverName"`
-	ReceiverINN      string `json:"receiverInn"`
-	DocDate          string `json:"docDate"`
-	CreatedTimestamp int64  `json:"createdTimestamp"`
-	TotalItems       int    `json:"totalItems"`
-}
-
-type docPageResp struct {
-	Results []docItem `json:"results"`
-	Total   int       `json:"total"`
-}
-
-// IncomingDocuments возвращает список документов по заданному фильтру.
-// token — JWT, полученный через Authenticate.
-func (c *Client) IncomingDocuments(ctx context.Context, token string, f DocFilter) ([]model.Document, int, error) {
-	if f.PageSize == 0 {
-		f.PageSize = 50
+func (c *Client) ListDocuments(ctx context.Context, token string, p DocListParams) (*model.DocListResponse, error) {
+	if p.Limit == 0 {
+		p.Limit = 50
 	}
 
-	req := c.http.R().
+	var result model.DocListResponse
+	start := time.Now()
+	resp, err := c.http.R().
 		SetContext(ctx).
 		SetHeader("Authorization", "Bearer "+token).
-		SetQueryParam("pageNum", strconv.Itoa(f.PageNum)).
-		SetQueryParam("pageSize", strconv.Itoa(f.PageSize))
-
-	if f.DateFrom != "" {
-		req.SetQueryParam("dateFrom", f.DateFrom)
-	}
-	if f.DateTo != "" {
-		req.SetQueryParam("dateTo", f.DateTo)
-	}
-	if f.Type != "" {
-		req.SetQueryParam("type", f.Type)
-	}
-	if f.Status != "" {
-		req.SetQueryParam("status", f.Status)
-	}
-
-	var result docPageResp
-	req.SetResult(&result)
-
-	start := time.Now()
-	resp, err := req.Get("/api/v3/true-api/facade/edo/documents")
+		SetQueryParam("pg", p.PG).
+		SetQueryParam("input", fmt.Sprintf("%t", p.Input)).
+		SetQueryParam("limit", fmt.Sprintf("%d", p.Limit)).
+		SetResult(&result).
+		Get("/api/v4/true-api/doc/list")
 	if err != nil {
-		return nil, 0, fmt.Errorf("crpt facade/doc: %w", err)
+		return nil, fmt.Errorf("crpt doc/list: %w", err)
 	}
 	slog.Info("crpt request",
 		"method", "GET",
-		"url", "/facade/edo/documents",
+		"url", "/api/v4/true-api/doc/list",
 		"status", resp.StatusCode(),
 		"duration_ms", time.Since(start).Milliseconds(),
-		"total", result.Total,
 	)
 	if resp.StatusCode() == 401 {
-		return nil, 0, ErrUnauthorized
+		return nil, ErrUnauthorized
 	}
 	if resp.IsError() {
-		return nil, 0, fmt.Errorf("crpt facade/doc: status %d: %s", resp.StatusCode(), resp.Body())
+		return nil, fmt.Errorf("crpt doc/list: status %d: %s", resp.StatusCode(), resp.Body())
 	}
+	return &result, nil
+}
 
-	docs := make([]model.Document, len(result.Results))
-	for i, d := range result.Results {
-		docs[i] = model.Document{
-			ID:               d.ID,
-			Type:             d.Type,
-			Status:           d.Status,
-			SenderName:       d.SenderName,
-			SenderINN:        d.SenderINN,
-			ReceiverName:     d.ReceiverName,
-			ReceiverINN:      d.ReceiverINN,
-			DocDate:          d.DocDate,
-			CreatedTimestamp: d.CreatedTimestamp,
-			TotalItems:       d.TotalItems,
-		}
+func (c *Client) GetDocumentInfo(ctx context.Context, token, docID, pg string) (*model.DocInfoResponse, error) {
+	// API returns a JSON array; we take the first element.
+	var results []model.DocInfoResponse
+	start := time.Now()
+	resp, err := c.http.R().
+		SetContext(ctx).
+		SetHeader("Authorization", "Bearer "+token).
+		SetQueryParam("pg", pg).
+		SetQueryParam("body", "true").
+		SetResult(&results).
+		Get("/api/v4/true-api/doc/" + docID + "/info")
+	if err != nil {
+		return nil, fmt.Errorf("crpt doc/info: %w", err)
 	}
-	return docs, result.Total, nil
+	slog.Info("crpt request",
+		"method", "GET",
+		"url", "/api/v4/true-api/doc/"+docID+"/info",
+		"status", resp.StatusCode(),
+		"duration_ms", time.Since(start).Milliseconds(),
+	)
+	if resp.StatusCode() == 401 {
+		return nil, ErrUnauthorized
+	}
+	if resp.IsError() {
+		return nil, fmt.Errorf("crpt doc/info: status %d: %s", resp.StatusCode(), resp.Body())
+	}
+	if len(results) == 0 {
+		return nil, fmt.Errorf("crpt doc/info: пустой ответ для документа %s", docID)
+	}
+	return &results[0], nil
 }

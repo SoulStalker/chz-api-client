@@ -49,7 +49,8 @@ func main() {
 	app.Get("/certs", certsH.Handle)
 	app.Get("/auth", authH.Handle)
 	app.Post("/auth", authH.Handle)
-	app.Get("/docs", docsH.Handle)
+	app.Get("/docs", docsH.ListDocuments)
+	app.Get("/docs/:id", docsH.ShowDocument)
 
 	logger.Info("starting server", "addr", cfg.Server.Addr)
 	if err := app.Listen(cfg.Server.Addr); err != nil {

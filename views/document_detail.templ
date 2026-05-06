@@ -1,0 +1,98 @@
+package views
+
+import (
+	"strconv"
+
+	"github.com/SoulStalker/chz-api-client/internal/model"
+)
+
+templ DocumentDetail(doc *model.DocInfoResponse, errMsg string) {
+	@Layout("Документ") {
+		<div class="mb-4">
+			<a href="/docs" class="text-blue-600 hover:underline text-sm">← Назад к списку</a>
+		</div>
+		if errMsg != "" {
+			<div class="mb-4 bg-red-50 border border-red-300 rounded p-4">
+				<p class="text-red-700 font-medium">Ошибка загрузки документа</p>
+				<p class="text-red-600 text-sm mt-1 font-mono">{ errMsg }</p>
+			</div>
+		}
+		if doc != nil {
+			<div class="bg-white shadow rounded p-6 mb-6">
+				<h1 class="text-2xl font-bold mb-4">Документ { doc.Number }</h1>
+				<dl class="grid grid-cols-2 gap-4 text-sm">
+					<div>
+						<dt class="font-medium text-gray-500">Тип</dt>
+						<dd class="font-mono">{ doc.Type }</dd>
+					</div>
+					<div>
+						<dt class="font-medium text-gray-500">Дата</dt>
+						<dd>{ doc.DocDate }</dd>
+					</div>
+					<div>
+						<dt class="font-medium text-gray-500">ИНН отправителя</dt>
+						<dd class="font-mono">{ doc.SenderInn }</dd>
+					</div>
+					<div>
+						<dt class="font-medium text-gray-500">Статус</dt>
+						<dd>{ statusLabel(doc.Status) }</dd>
+					</div>
+				</dl>
+			</div>
+			<h2 class="text-xl font-semibold mb-3">Товарные позиции</h2>
+			if len(doc.Body.Products) > 0 {
+				<p class="text-sm text-gray-500 mb-3">Позиций: { strconv.Itoa(len(doc.Body.Products)) }</p>
+				<div class="bg-white shadow rounded overflow-x-auto">
+					<table class="w-full text-sm">
+						<thead class="bg-gray-100">
+							<tr>
+								<th class="px-4 py-2 text-left">#</th>
+								<th class="px-4 py-2 text-left">Код маркировки</th>
+								<th class="px-4 py-2 text-left">GTIN</th>
+								<th class="px-4 py-2 text-left">Наименование</th>
+								<th class="px-4 py-2 text-right">Кол-во</th>
+								<th class="px-4 py-2 text-left">Тип кода</th>
+							</tr>
+						</thead>
+						<tbody>
+							for i, p := range doc.Body.Products {
+								<tr class="border-t hover:bg-gray-50">
+									<td class="px-4 py-2 text-gray-400">{ strconv.Itoa(i + 1) }</td>
+									<td class="px-4 py-2 font-mono text-xs break-all">{ p.Code }</td>
+									<td class="px-4 py-2 font-mono text-xs">{ p.GTIN }</td>
+									<td class="px-4 py-2">{ p.Name }</td>
+									<td class="px-4 py-2 text-right font-mono">{ p.Quantity }</td>
+									<td class="px-4 py-2 text-xs text-gray-500">{ p.CodeType }</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} else if len(doc.Body.CisesList) > 0 {
+				<p class="text-sm text-gray-500 mb-3">КИ: { strconv.Itoa(len(doc.Body.CisesList)) }</p>
+				<div class="bg-white shadow rounded overflow-x-auto">
+					<table class="w-full text-sm">
+						<thead class="bg-gray-100">
+							<tr>
+								<th class="px-4 py-2 text-left">#</th>
+								<th class="px-4 py-2 text-left">Код маркировки</th>
+							</tr>
+						</thead>
+						<tbody>
+							for i, cis := range doc.Body.CisesList {
+								<tr class="border-t hover:bg-gray-50">
+									<td class="px-4 py-2 text-gray-400">{ strconv.Itoa(i + 1) }</td>
+									<td class="px-4 py-2 font-mono text-xs break-all">{ cis }</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} else {
+				<div class="bg-white shadow rounded p-8 text-center text-gray-500">
+					Позиций не найдено
+				</div>
+			}
+		}
+	}
+}

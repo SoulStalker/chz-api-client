@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"strconv"
-	"time"
 
 	"github.com/SoulStalker/chz-api-client/internal/crpt"
 	"github.com/SoulStalker/chz-api-client/internal/session"
@@ -20,73 +18,53 @@ func NewDocsHandler(c *crpt.Client, sessions *session.Store) *DocsHandler {
 	return &DocsHandler{crpt: c, sessions: sessions}
 }
 
-func (h *DocsHandler) Handle(c *fiber.Ctx) error {
+func (h *DocsHandler) token(c *fiber.Ctx) (string, bool) {
 	sessionID := c.Cookies("crpt_session")
 	if sessionID == "" {
-		c.Type("html")
-		return views.Documents(nil, 0, "", "", "", 0, 15,
-			"Сессия не найдена — авторизуйтесь на странице /auth").Render(c.Context(), c.Response().BodyWriter())
+		return "", false
 	}
+	return h.sessions.Get(sessionID)
+}
 
-	token, ok := h.sessions.Get(sessionID)
+func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
+	token, ok := h.token(c)
 	if !ok {
-		c.ClearCookie("crpt_session")
-		c.Type("html")
-		return views.Documents(nil, 0, "", "", "", 0, 15,
-			"Сессия истекла — авторизуйтесь повторно на странице /auth").Render(c.Context(), c.Response().BodyWriter())
+		return c.Redirect("/auth")
 	}
 
-	now := time.Now()
-
-	dateFrom := c.Query("date_from")
-	if dateFrom == "" {
-		dateFrom = now.AddDate(0, 0, -3).Format("2006-01-02")
-	}
-	dateTo := c.Query("date_to")
-	if dateTo == "" {
-		dateTo = now.Format("2006-01-02")
-	}
-
-	pageNum := 0
-	if s := c.Query("page_num"); s != "" {
-		if n, err := strconv.Atoi(s); err == nil && n >= 0 {
-			pageNum = n
-		}
-	}
-
-	pageSize := 15
-	if s := c.Query("page_size"); s != "" {
-		if n, err := strconv.Atoi(s); err == nil {
-			switch n {
-			case 15, 30, 50, 100:
-				pageSize = n
-			}
-		}
-	}
-
-	status := c.Query("status")
-
-	f := crpt.DocFilter{
-		DateFrom: dateFrom,
-		DateTo:   dateTo,
-		Type:     "LP_ACCEPT_GOODS",
-		Status:   status,
-		PageNum:  pageNum,
-		PageSize: pageSize,
-	}
-
-	docs, total, err := h.crpt.IncomingDocuments(c.Context(), token, f)
+	result, err := h.crpt.ListDocuments(c.Context(), token, crpt.DocListParams{
+		PG:    "water",
+		Input: true,
+		Limit: 50,
+	})
 	if err != nil {
-		errMsg := err.Error()
 		if errors.Is(err, crpt.ErrUnauthorized) {
-			h.sessions.Delete(sessionID)
-			c.ClearCookie("crpt_session")
-			errMsg = "Токен истёк или недействителен (401) — авторизуйтесь снова на /auth"
+			return c.Redirect("/auth")
 		}
 		c.Type("html")
-		return views.Documents(nil, 0, dateFrom, dateTo, status, pageNum, pageSize, errMsg).Render(c.Context(), c.Response().BodyWriter())
+		return views.Documents(nil, false, err.Error()).Render(c.Context(), c.Response().BodyWriter())
 	}
 
 	c.Type("html")
-	return views.Documents(docs, total, dateFrom, dateTo, status, pageNum, pageSize, "").Render(c.Context(), c.Response().BodyWriter())
+	return views.Documents(result.Results, result.NextPage, "").Render(c.Context(), c.Response().BodyWriter())
+}
+
+func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {
+	token, ok := h.token(c)
+	if !ok {
+		return c.Redirect("/auth")
+	}
+
+	docID := c.Params("id")
+	info, err := h.crpt.GetDocumentInfo(c.Context(), token, docID, "water")
+	if err != nil {
+		if errors.Is(err, crpt.ErrUnauthorized) {
+			return c.Redirect("/auth")
+		}
+		c.Type("html")
+		return views.DocumentDetail(nil, err.Error()).Render(c.Context(), c.Response().BodyWriter())
+	}
+
+	c.Type("html")
+	return views.DocumentDetail(info, "").Render(c.Context(), c.Response().BodyWriter())
 }
