@@ -49,7 +49,9 @@ func main() {
 	app.Get("/certs", certsH.Handle)
 	app.Get("/auth", authH.Handle)
 	app.Post("/auth", authH.Handle)
-	app.Get("/docs", docsH.ListDocuments)
+	app.Get("/docs", func(c *fiber.Ctx) error { return c.Redirect("/docs/incoming") })
+	app.Get("/docs/incoming", docsH.ListDocuments)
+	app.Get("/docs/outgoing", docsH.ListDocuments)
 	app.Get("/docs/:id", docsH.ShowDocument)
 
 	logger.Info("starting server", "addr", cfg.Server.Addr)

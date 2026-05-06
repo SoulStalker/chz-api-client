@@ -9,27 +9,33 @@ import (
 	"github.com/SoulStalker/chz-api-client/internal/model"
 )
 
-type DocListParams struct {
-	PG    string
-	Input bool
-	Limit int
-}
-
-func (c *Client) ListDocuments(ctx context.Context, token string, p DocListParams) (*model.DocListResponse, error) {
+func (c *Client) ListDocuments(ctx context.Context, token string, p model.DocListParams) (*model.DocListResponse, error) {
 	if p.Limit == 0 {
 		p.Limit = 50
 	}
 
 	var result model.DocListResponse
 	start := time.Now()
-	resp, err := c.http.R().
+	req := c.http.R().
 		SetContext(ctx).
 		SetHeader("Authorization", "Bearer "+token).
 		SetQueryParam("pg", p.PG).
 		SetQueryParam("input", fmt.Sprintf("%t", p.Input)).
 		SetQueryParam("limit", fmt.Sprintf("%d", p.Limit)).
-		SetResult(&result).
-		Get("/api/v4/true-api/doc/list")
+		SetResult(&result)
+
+	if p.DateFrom != "" {
+		req.SetQueryParam("dateFrom", p.DateFrom)
+	}
+	if p.DateTo != "" {
+		req.SetQueryParam("dateTo", p.DateTo)
+	}
+	if p.DID != "" {
+		req.SetQueryParam("did", p.DID)
+		req.SetQueryParam("orderedColumnValue", p.OrderedColumnValue)
+	}
+
+	resp, err := req.Get("/api/v4/true-api/doc/list")
 	if err != nil {
 		return nil, fmt.Errorf("crpt doc/list: %w", err)
 	}
@@ -48,9 +54,8 @@ func (c *Client) ListDocuments(ctx context.Context, token string, p DocListParam
 	return &result, nil
 }
 
-func (c *Client) GetDocumentInfo(ctx context.Context, token, docID, pg string) (*model.DocInfoResponse, error) {
-	// API returns a JSON array; we take the first element.
-	var results []model.DocInfoResponse
+func (c *Client) GetDocumentInfo(ctx context.Context, token, docID, pg string) (*model.DocInfo, error) {
+	var results []model.DocInfo
 	start := time.Now()
 	resp, err := c.http.R().
 		SetContext(ctx).

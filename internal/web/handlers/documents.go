@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"errors"
-	"sort"
+	"strings"
+	"time"
 
 	"github.com/SoulStalker/chz-api-client/internal/crpt"
+	"github.com/SoulStalker/chz-api-client/internal/model"
 	"github.com/SoulStalker/chz-api-client/internal/session"
 	"github.com/SoulStalker/chz-api-client/views"
 	"github.com/gofiber/fiber/v2"
@@ -33,26 +35,60 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 		return c.Redirect("/auth")
 	}
 
-	result, err := h.crpt.ListDocuments(c.Context(), token, crpt.DocListParams{
-		PG:    "water",
-		Input: true,
-		Limit: 50,
-	})
+	isIncoming := strings.Contains(c.Path(), "incoming")
+
+	now := time.Now().UTC()
+	displayDateFrom := now.Add(-72 * time.Hour).Format("2006-01-02")
+	displayDateTo := now.Format("2006-01-02")
+	apiDateFrom := now.Add(-72 * time.Hour).Format("2006-01-02T15:04:05.000Z")
+	apiDateTo := now.Format("2006-01-02T15:04:05.000Z")
+
+	if v := c.Query("date_from"); v != "" {
+		if t, err := time.Parse("2006-01-02", v); err == nil {
+			start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+			apiDateFrom = start.Format("2006-01-02T15:04:05.000Z")
+			displayDateFrom = v
+		}
+	}
+	if v := c.Query("date_to"); v != "" {
+		if t, err := time.Parse("2006-01-02", v); err == nil {
+			end := time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 999000000, time.UTC)
+			apiDateTo = end.Format("2006-01-02T15:04:05.000Z")
+			displayDateTo = v
+		}
+	}
+
+	did := c.Query("did")
+	ocv := c.Query("ordered_column_value")
+
+	params := model.DocListParams{
+		PG:                 "water",
+		Input:              isIncoming,
+		DateFrom:           apiDateFrom,
+		DateTo:             apiDateTo,
+		Limit:              50,
+		DID:                did,
+		OrderedColumnValue: ocv,
+	}
+
+	result, err := h.crpt.ListDocuments(c.Context(), token, params)
 	if err != nil {
 		if errors.Is(err, crpt.ErrUnauthorized) {
 			return c.Redirect("/auth")
 		}
 		c.Type("html")
-		return views.Documents(nil, false, err.Error()).Render(c.Context(), c.Response().BodyWriter())
+		return views.Documents(nil, false, err.Error(), isIncoming, displayDateFrom, displayDateTo, "", "").Render(c.Context(), c.Response().BodyWriter())
 	}
 
-	docs := result.Results
-	sort.Slice(docs, func(i, j int) bool {
-		return docs[i].DocDate > docs[j].DocDate
-	})
+	var nextDID, nextOCV string
+	if result.NextPage && len(result.Results) > 0 {
+		last := result.Results[len(result.Results)-1]
+		nextDID = last.Number
+		nextOCV = last.DocDate
+	}
 
 	c.Type("html")
-	return views.Documents(docs, result.NextPage, "").Render(c.Context(), c.Response().BodyWriter())
+	return views.Documents(result.Results, result.NextPage, "", isIncoming, displayDateFrom, displayDateTo, nextDID, nextOCV).Render(c.Context(), c.Response().BodyWriter())
 }
 
 func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {

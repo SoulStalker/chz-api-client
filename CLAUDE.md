@@ -38,6 +38,18 @@ Browser → Fiber (middleware/logger.go) → handler → crpt.Client → CRPT AP
                                                   ↘ signer.Client → sign-service gRPC (Windows)
 ```
 
+### Routes
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| GET | `/` | — | Редирект на `/certs` |
+| GET | `/certs` | `handlers.ListCerts` | Список сертификатов из sign-service |
+| GET | `/auth` | `handlers.AuthForm` | Форма авторизации |
+| POST | `/auth` | `handlers.Auth` | Авторизация → JWT в cookie `crpt_token` |
+| GET | `/docs/incoming` | `handlers.ListDocuments` | Входящие документы (`input=true`) |
+| GET | `/docs/outgoing` | `handlers.ListDocuments` | Исходящие документы (`input=false`) |
+| GET | `/docs/:id` | `handlers.ShowDocument` | Детали документа + список КИ |
+
 ### Config env overrides
 
 `SERVER_ADDR`, `CRPT_BASE_URL`, `CRPT_THUMBPRINT`, `CRPT_INN`, `CRPT_MCHD`, `SIGNER_ADDR`, `LOG_LEVEL`
@@ -56,238 +68,214 @@ Browser → Fiber (middleware/logger.go) → handler → crpt.Client → CRPT AP
 
 All requests require header: `Authorization: Bearer <JWT_TOKEN>` (from cookie `crpt_token`).
 
+Rate limit: **50 req/s** — не превышать при навигации.
+
 ---
 
-### 2.1 GET /api/v4/true-api/doc/list — список документов
+### GET /api/v4/true-api/doc/list — список документов
 
-**Товарная группа:** `water` (код БД: 13). Параметр `pg=water` обязателен во всех запросах.
+**Товарная группа:** `water` (код БД: 13). Параметр `pg=water` обязателен.
 
 **Query-параметры:**
 
-| Параметр       | Тип      | Обязательный | Описание                                                                 |
-|----------------|----------|--------------|--------------------------------------------------------------------------|
-| `pg`           | string   | ✅            | Товарная группа: `water`                                                 |
-| `input`        | bool     | ✅            | `true` — входящие документы от поставщиков                               |
-| `documentType` | []string | нет          | Типы отгрузок: `LP_SHIP_GOODS`, `LP_SHIP_GOODS_CSV`, `LP_SHIP_GOODS_XML` |
-| `dateFrom`     | string   | нет          | ISO 8601, напр. `2024-01-01T00:00:00.000Z`                               |
-| `dateTo`       | string   | нет          | ISO 8601                                                                 |
-| `limit`        | int      | нет          | Макс. 1000, по умолчанию 50                                              |
+| Параметр             | Тип    | Обязателен | Описание |
+|----------------------|--------|------------|----------|
+| `pg`                 | string | ✅          | `water` |
+| `input`              | bool   | ✅          | `true` — входящие, `false` — исходящие |
+| `dateFrom`           | string | нет        | UTC ISO 8601 с мс: `2024-01-01T00:00:00.000Z` |
+| `dateTo`             | string | нет        | UTC ISO 8601 с мс |
+| `limit`              | int    | нет        | Константа **50**, макс. 1000 |
+| `did`                | string | нет        | `number` последнего документа предыдущей страницы |
+| `orderedColumnValue` | string | нет        | `docDate` последнего документа предыдущей страницы |
 
-**Пример запроса:**
-```bash
-curl "{CRPT_BASE_URL}/api/v4/true-api/doc/list?pg=water&input=true&limit=50" \
-  -H "Authorization: Bearer <TOKEN>"
+> `did` и `orderedColumnValue` — курсорная пагинация. Добавлять в запрос **только если непусты**.
+
+**Defaults при отсутствии параметров фильтрации:**
+```go
+dateTo   = time.Now().UTC()
+dateFrom = time.Now().UTC().Add(-72 * time.Hour) // минус 3 суток
+limit    = 50
+// did и orderedColumnValue = "" (первая страница)
 ```
 
-**Ответ — Go модель (`internal/model/document.go`):**
+**Go-модели (`internal/model/document.go`):**
+
 ```go
+type DocListParams struct {
+    PG                 string
+    Input              bool
+    DateFrom           string // UTC ISO 8601 с мс
+    DateTo             string
+    Limit              int    // константа 50
+    DID                string // cursor: number последнего doc
+    OrderedColumnValue string // cursor: docDate последнего doc
+}
+
 type DocListResponse struct {
     Results  []Document `json:"results"`
     NextPage bool       `json:"nextPage"`
 }
 
 type Document struct {
-    Number    string `json:"number"`    // ID документа — использовать в /docs/:id
-    Type      string `json:"type"`      // LP_SHIP_GOODS | LP_SHIP_GOODS_CSV | LP_SHIP_GOODS_XML
-    DocDate   string `json:"docDate"`   // ISO 8601
-    SenderInn string `json:"senderInn"` // ИНН поставщика
-    Status    string `json:"status"`    // WAIT_ACCEPTANCE | ACCEPTED | REJECTED | ...
+    Number        string `json:"number"`      // системный ID — cursor DID + ссылка /docs/:id
+    Type          string `json:"type"`
+    DocDate       string `json:"docDate"`     // cursor OrderedColumnValue
+    SenderInn     string `json:"senderInn"`
+    SenderName    string `json:"senderName"`
+    ReceiverInn   string `json:"receiverInn"`
+    InvoiceNumber string `json:"invoiceNumber"` // человекочитаемый номер (напр. "УТ-13894")
+    Status        string `json:"status"`      // CHECKED_OK | WAIT_ACCEPTANCE | REJECTED | CHECKED_NOT_OK
+    Input         bool   `json:"input"`
 }
 ```
 
 ---
 
-### 2.2 GET /api/v4/true-api/doc/{docId}/info — детали документа (КИ)
+### GET /api/v4/true-api/doc/{docId}/info — детали документа
+
+> ⚠️ API возвращает **массив** `[]DocInfo`, не объект. Брать `response[0]`; ошибка если массив пуст.
 
 **Query-параметры:**
 
-| Параметр | Тип    | Обязательный | Описание                                              |
-|----------|--------|--------------|-------------------------------------------------------|
-| `pg`     | string | ✅            | `water`                                               |
-| `body`   | bool   | ✅            | `true` — **без этого параметра КИ не возвращаются**   |
+| Параметр | Тип    | Обязателен | Описание |
+|----------|--------|------------|----------|
+| `pg`     | string | ✅          | `water` |
+| `body`   | bool   | ✅          | `true` — **без этого КИ не возвращаются** |
 
-**Пример запроса:**
-```bash
-curl "{CRPT_BASE_URL}/api/v4/true-api/doc/{docId}/info?pg=water&body=true" \
-  -H "Authorization: Bearer <TOKEN>"
-```
+**Go-модели (`internal/model/document.go`):**
 
-**Ответ — Go модель (`internal/model/document.go`):**
 ```go
-type DocInfoResponse struct {
-    Number    string  `json:"number"`
-    Type      string  `json:"type"`
-    DocDate   string  `json:"docDate"`
-    SenderInn string  `json:"senderInn"`
-    Status    string  `json:"status"`
-    Body      DocBody `json:"body"`
+type DocInfo struct {
+    Number        string  `json:"number"`
+    DocDate       string  `json:"docDate"`
+    ReceivedAt    string  `json:"receivedAt"`
+    Type          string  `json:"type"`
+    Status        string  `json:"status"`
+    SenderInn     string  `json:"senderInn"`
+    SenderName    string  `json:"senderName"`
+    ReceiverInn   string  `json:"receiverInn"`
+    ReceiverName  string  `json:"receiverName"`
+    InvoiceNumber string  `json:"invoiceNumber"` // заголовок страницы деталей
+    InvoiceDate   string  `json:"invoiceDate"`
+    RelatedDocID  *string `json:"relatedDocId"`
+    TurnoverType  string  `json:"turnoverType"`
+    Body          DocBody `json:"body"`
 }
 
 type DocBody struct {
-    // Для water-группы КИ находятся в products.
-    // Для других форматов может быть cisesList — проверять оба поля.
-    Products  []Product `json:"products"`
-    CisesList []string  `json:"cisesList"`
+    Products  []Product `json:"products"`  // primary для water
+    CisesList []string  `json:"cisesList"` // fallback если products пуст
+    SumNds    string    `json:"sumNds"`
 }
 
 type Product struct {
-    Cis          string `json:"cis"`          // Код маркировки (КИ)
-    // КИ могут возвращаться в нормализованном виде (без скобок AI 01/21)
-    // Отображать as-is, не трансформировать.
+    Code     string `json:"code"`     // КИ — отображать as-is, моноширинным шрифтом
+    Name     string `json:"name"`
+    CodeType string `json:"codeType"` // OSU | SSCC | ...
+    GTIN     string `json:"gtin"`
+    Quantity string `json:"quantity"`
+    StrNum   int    `json:"strNum"`
 }
 ```
 
 ---
 
-## Handlers — реализация
+## Handlers
 
-### GET /docs
+### ListDocuments — GET /docs/incoming, GET /docs/outgoing
 
 ```
 internal/web/handlers/documents.go → func ListDocuments(c *fiber.Ctx) error
 ```
 
-1. Взять JWT из cookie `crpt_token`; если отсутствует — редирект на `/auth`.
-2. Вызвать `crpt.Client.ListDocuments(ctx, token, DocListParams{PG: "water", Input: true, Limit: 50})`.
-3. Передать `[]model.Document` в templ-шаблон `views/documents.templ`.
-4. Таблица: `number`, `type`, `docDate`, `senderInn`, `status` + ссылка «Детали» → `/docs/{number}`.
+1. Направление: path содержит `incoming` → `input=true`, `outgoing` → `input=false`.
+2. JWT из cookie `crpt_token`; отсутствует → редирект `/auth`.
+3. Query Params: `date_from`, `date_to`, `did`, `ordered_column_value`. Если пусты — применить defaults.
+4. Вызвать `crpt.Client.ListDocuments(ctx, token, params)`.
+5. Cursor следующей страницы (если `nextPage=true`):
+```go
+last := results[len(results)-1]
+nextDID := last.Number
+nextOCV := last.DocDate
+```
+6. Передать в шаблон: `results`, `nextPage`, текущие `dateFrom`/`dateTo`, `nextDID`, `nextOCV`, флаг `isIncoming`.
 
-### GET /docs/:id
+### ShowDocument — GET /docs/:id
 
 ```
 internal/web/handlers/documents.go → func ShowDocument(c *fiber.Ctx) error
 ```
 
-1. Взять `docId` из `c.Params("id")`.
-2. Взять JWT из cookie `crpt_token`; если отсутствует — редирект на `/auth`.
+1. `docId` из `c.Params("id")`.
+2. JWT из cookie; отсутствует → редирект `/auth`.
 3. Вызвать `crpt.Client.GetDocumentInfo(ctx, token, docId, "water")`.
-4. Парсить `body.products` (primary) или `body.cisesList` (fallback).
-5. Передать метаданные + список КИ в `views/document_detail.templ`.
+4. Десериализовать `[]DocInfo`, взять `[0]`.
+5. `body.products` (primary) или `body.cisesList` (fallback).
+6. Передать в `views/document_detail.templ`.
 
-### crpt.Client — новые методы
+### crpt.Client — методы (`internal/crpt/documents.go`)
 
 ```go
-// internal/crpt/documents.go
+func (c *Client) ListDocuments(ctx context.Context, token string, p model.DocListParams) (*model.DocListResponse, error)
+// GET /api/v4/true-api/doc/list
+// did и orderedColumnValue добавлять только если p.DID != ""
 
-func (c *Client) ListDocuments(ctx context.Context, token string, p DocListParams) (*model.DocListResponse, error)
-// GET /api/v4/true-api/doc/list?pg={p.PG}&input={p.Input}&limit={p.Limit}&...
-
-func (c *Client) GetDocumentInfo(ctx context.Context, token, docID, pg string) (*model.DocInfoResponse, error)
+func (c *Client) GetDocumentInfo(ctx context.Context, token, docID, pg string) (*model.DocInfo, error)
 // GET /api/v4/true-api/doc/{docID}/info?pg={pg}&body=true
+// Ответ []DocInfo → вернуть [0]; если пусто — error
 ```
 
-**Удалить старый метод** (если существует): любой вызов к `/true-api/facade/doc` или эндпоинтам v3.
+---
+
+## UI — шаблоны (views/)
+
+### documents.templ
+
+- Вкладки «Входящие» / «Исходящие» → `/docs/incoming`, `/docs/outgoing`. Активная вкладка выделена.
+- Форма фильтрации: `date_from`, `date_to` (`<input type="date">`), GET на текущий маршрут.
+- Таблица: `Дата` (`02.01.2006`) | `Счёт №` (`invoiceNumber`) | `Поставщик` | `ИНН` | `Тип` | `Статус` (badge) | `Детали`.
+- Статус-badge: `CHECKED_OK`→зелёный, `WAIT_ACCEPTANCE`→жёлтый, `REJECTED`/`CHECKED_NOT_OK`→красный, остальные→серый.
+- Пагинация (если `nextPage=true`):
+```
+/docs/incoming?date_from={dateFrom}&date_to={dateTo}&did={nextDID}&ordered_column_value={nextOCV}
+```
+
+### document_detail.templ
+
+- Заголовок: `invoiceNumber` (не `number`).
+- Метаданные (2 колонки): дата, поставщик + ИНН, получатель + ИНН, тип, статус-badge, НДС.
+- Таблица КИ: `#` | `Наименование` | `GTIN` | `Кол-во` | `Тип кода` | `Код маркировки` (моноширинный `<code>`).
+- Debug-секция `<details><summary>Debug</summary>`: `number`, `receivedAt`, `relatedDocId`, `turnoverType`, полный JSON в `<pre>`.
 
 ---
+
+## Обработка ошибок
+
+| HTTP | Действие |
+|---|---|
+| 401 | Редирект на `/auth` |
+| 400 | Логировать `error_message`, вернуть ошибку пользователю |
+| 403 | Нет доступа у сертификата — показать сообщение |
+| 404 | Залогировать полный URL запроса |
+| 5xx | Логировать, показать «сервис временно недоступен» |
 
 ## Constraints
 
 - `sign-service` only runs on Windows — gRPC calls will fail locally unless tunnelled or mocked.
 - JWT is not cached; auth must be repeated after expiry (~10 h).
 - **True API v4 only** — пути без `/api/v4/` prefix возвращают 404.
-- Параметр `pg=water` обязателен в каждом запросе к doc API.
-- Параметр `body=true` обязателен для `/doc/{id}/info` — иначе КИ не возвращаются.
-
-## Обработка ошибок
-
-| HTTP | Действие |
-|---|---|
-| 401 | Токен истёк — редирект на `/auth` для повторной авторизации |
-| 400 | Логировать тело ответа (`error_message`), вернуть ошибку пользователю |
-| 403 | У сертификата нет доступа к методу — показать сообщение |
-| 404 | Неверный путь API — залогировать полный URL запроса для диагностики |
-| 5xx | Логировать, показать «сервис временно недоступен» |
+- `pg=water` обязателен в каждом запросе к doc API.
+- `body=true` обязателен для `/doc/{id}/info`.
+- Rate limit True API: **50 req/s**.
+- Формат дат для API — UTC с миллисекундами. Пример форматирования:
+```go
+t.UTC().Format("2006-01-02T15:04:05.000Z")
+```
 
 ## Что НЕ реализовывать на этом этапе
 
-- Приёмка / отклонение документа (accept/reject actions)
-- Кэширование токена и его автообновление
-- Пагинация через UI — первые 50 записей, `limit` хардкодить в клиенте
+- Приёмка / отклонение документа
+- Кэширование токена и автообновление
 - Экспорт в Excel/CSV
-- Фильтрация по `documentStatus` по умолчанию — показывать все статусы
-
-## Задача: ds /docs и /docs/:id
-
-### Контекст
-Go-сервис chz-api-client (Fiber + templ). Два шаблона требуют переработки:
-- `views/documents.templ` — список документов
-- `views/document_detail.templ` — детали документа
-
----
-
-### 1. Страница /docs — список документов
-
-**Текущая проблема:** дата в формате ISO 8601 нечитаема, нет сортировки, статус не выделен цветом.
-
-**Что сделать:**
-
-1. Форматировать `docDate` как `02.01.2006 15:04` (Go layout) — не ISO строку.
-2. Статус — цветной badge:
-   - `CHECKED_OK` → зелёный
-   - `WAIT_ACCEPTANCE` → жёлтый  
-   - `REJECTED`, `CHECKED_NOT_OK` → красный
-   - остальные → серый
-3. Колонку `number` убрать из таблицы — она нечитаема (длинный ID). 
-   Оставить только кнопку «Детали» → `/docs/{number}`.
-4. Добавить колонку **«Счёт/накладная»** (`invoiceNumber`) — это человекочитаемый номер документа.
-5. Итоговые колонки таблицы: `Дата` | `Счёт №` | `Поставщик` | `ИНН` | `Тип` | `Статус` | `Детали`
-
----
-
-### 2. Страница /docs/:id — детали документа
-
-**Текущая проблема:** системный номер документа (`number`) отображается как заголовок вместо `invoiceNumber`.
-Таблица товаров не показывает важные для дебага поля.
-
-**Что сделать:**
-
-**Заголовок страницы:** использовать `invoiceNumber` (напр. «УТ-13894»), а не `number`.
-
-**Блок метаданных** — две колонки (таблица 2×N):
-
-| Поле | Значение |
-|---|---|
-| Дата документа | `invoiceDate` отформатированная |
-| Поставщик | `senderName` |
-| ИНН поставщика | `senderInn` |
-| Получатель | `receiverName` |
-| ИНН получателя | `receiverInn` |
-| Тип | `type` |
-| Статус | badge (те же цвета) |
-| НДС | `body.sumNds` |
-
-**Таблица товаров** (`body.products[]`):
-
-Реальная структура продукта из API:
-```go
-type Product struct {
-    Code     string `json:"code"`     // КИ / код маркировки
-    Name     string `json:"name"`     // наименование товара
-    CodeType string `json:"codeType"` // OSU / SSCC / ...
-    GTIN     string `json:"gtin"`
-    Quantity string `json:"quantity"`
-    StrNum   int    `json:"strNum"`   // порядковый номер строки
-}
-```
-
-Колонки: `#` (strNum) | `Наименование` | `GTIN` | `Кол-во` | `Тип кода` | `Код маркировки`
-
-Код маркировки (`code`) — моноширинный шрифт (`<code>`), т.к. сканируется/сравнивается руками.
-
-**Debug-секция** (сворачиваемая, `<details><summary>Debug: raw JSON</summary>`):
-- Системный номер документа (`number`) — полная строка
-- `receivedAt` — когда документ поступил в систему
-- `relatedDocId` — связанный документ (если не null)
-- `turnoverType`, `productGroupId`
-- Полный JSON ответа в `<pre>` для копипаста
-
----
-
-### 3. Важные уточнения
-
-- Шаблоны `templ` — после правок запустить `make templ`
-- Модели в `internal/model/document.go` обновить согласно реальной структуре:
-  - `DocInfoResponse` — это **массив** `[]DocInfo`, не объект (API возвращает `[{...}]`)
-  - Добавить поля: `SenderName`, `ReceiverName`, `ReceiverInn`, `InvoiceNumber`, `InvoiceDate`, `ReceivedAt`
-  - `Product.Code` (не `Cis`), добавить `Name`, `GTIN`, `Quantity`, `StrNum`
-- CSS: использовать только то, что уже подключено в `views/layout.templ` — не добавлять внешние CDN
+- Фильтрация по `documentType` через UI
+- Фильтрация по статусу через UI
