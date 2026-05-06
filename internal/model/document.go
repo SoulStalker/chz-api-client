@@ -45,9 +45,12 @@ type DocInfo struct {
 }
 
 type DocBody struct {
-	Products  []Product `json:"products"`
-	CisesList []string  `json:"cisesList"`
-	SumNds    string    `json:"sumNds"`
+	UPD            string    `json:"upd"`
+	UPDDate        string    `json:"updDate"`
+	AcceptanceCode string    `json:"acceptanceCode"`
+	SumNds         string    `json:"sumNds"`
+	Products       []Product `json:"products"`
+	CisesList      []string  `json:"cisesList"`
 }
 
 type Product struct {

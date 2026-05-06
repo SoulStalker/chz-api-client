@@ -104,9 +104,9 @@ func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {
 			return c.Redirect("/auth")
 		}
 		c.Type("html")
-		return views.DocumentDetail(nil, err.Error()).Render(c.Context(), c.Response().BodyWriter())
+		return views.DocumentDetail(docID, nil, err.Error()).Render(c.Context(), c.Response().BodyWriter())
 	}
 
 	c.Type("html")
-	return views.DocumentDetail(info, "").Render(c.Context(), c.Response().BodyWriter())
+	return views.DocumentDetail(docID, info, "").Render(c.Context(), c.Response().BodyWriter())
 }

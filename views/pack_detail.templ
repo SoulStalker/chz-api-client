@@ -1,0 +1,91 @@
+package views
+
+import (
+	"net/url"
+	"strconv"
+
+	"github.com/SoulStalker/chz-api-client/internal/model"
+)
+
+func groupHref(docID, packCode, childCisKey, invoiceNumber string) string {
+	return "/docs/" + docID + "/pack/" + packCode + "/group/" + childCisKey + "?invoice_number=" + url.QueryEscape(invoiceNumber)
+}
+
+templ PackDetail(docID, packCode, invoiceNumber string, cis *model.CisInfo, errMsg string) {
+	@Layout("Транспортная упаковка", "docs") {
+		<nav class="text-sm text-gray-500 mb-6 flex items-center gap-1.5">
+			<a href="/docs/incoming" class="text-blue-600 hover:text-blue-800">Документы</a>
+			<span>›</span>
+			<a href={ templ.SafeURL("/docs/" + docID) } class="text-blue-600 hover:text-blue-800">УПД { invoiceNumber }</a>
+			<span>›</span>
+			<span class="text-gray-700">Транспортная упаковка</span>
+		</nav>
+		if errMsg != "" {
+			<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+				<p class="text-red-700 font-medium text-sm">Ошибка</p>
+				<p class="text-red-600 text-xs mt-1 font-mono">{ errMsg }</p>
+			</div>
+		}
+		if cis != nil {
+			<div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+				<h1 class="text-xl font-bold text-gray-900 mb-1">Транспортная упаковка</h1>
+				<code class="text-sm text-gray-500 font-mono break-all">{ packCode }</code>
+				if cis.Name != "" {
+					<p class="text-gray-600 mt-2 text-sm">{ cis.Name }</p>
+				}
+				<dl class="mt-4 flex gap-8 text-sm">
+					if cis.GTIN != "" {
+						<div>
+							<dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">GTIN</dt>
+							<dd class="font-mono text-gray-700">{ cis.GTIN }</dd>
+						</div>
+					}
+					<div>
+						<dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Вложений</dt>
+						<dd class="text-gray-700">{ strconv.Itoa(cis.ChildCount) }</dd>
+					</div>
+				</dl>
+			</div>
+			<h2 class="text-lg font-semibold text-gray-900 mb-3">Вложения</h2>
+			if len(cis.Child) == 0 {
+				<div class="bg-white border border-gray-200 rounded-lg p-12 text-center">
+					<p class="text-gray-400 text-sm">Вложений не найдено</p>
+				</div>
+			} else {
+				<div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+					<table class="w-full text-sm">
+						<thead>
+							<tr class="bg-gray-50 border-b border-gray-200">
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Код вложения</th>
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Тип упаковки</th>
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">GTIN</th>
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Содержит</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-gray-100">
+							for _, child := range cis.Child {
+								<tr class="hover:bg-gray-50">
+									<td class="px-5 py-3">
+										<code class="font-mono text-xs text-gray-700 break-all">{ child.CisKey }</code>
+										if child.Name != "" {
+											<p class="text-xs text-gray-400 mt-0.5">{ child.Name }</p>
+										}
+									</td>
+									<td class="px-5 py-3 text-xs text-gray-500">{ packTypeLabel(child.PackType) }</td>
+									<td class="px-5 py-3 font-mono text-xs text-gray-500">{ child.GTIN }</td>
+									<td class="px-5 py-3">
+										if child.PackType == "GROUP" {
+											<a href={ templ.SafeURL(groupHref(docID, packCode, child.CisKey, invoiceNumber)) } class="text-blue-600 hover:text-blue-800 text-xs font-medium">Вложения →</a>
+										} else {
+											<span class="text-gray-300">—</span>
+										}
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		}
+	}
+}

@@ -35,6 +35,7 @@ func main() {
 	certsH := handlers.NewCertsHandler(signerClient)
 	authH := handlers.NewAuthHandler(crptClient, sessions, cfg.CRPT.Thumbprint, cfg.CRPT.INN, cfg.CRPT.MCHD)
 	docsH := handlers.NewDocsHandler(crptClient, sessions)
+	packsH := handlers.NewPacksHandler(crptClient, sessions)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -53,6 +54,8 @@ func main() {
 	app.Get("/docs/incoming", docsH.ListDocuments)
 	app.Get("/docs/outgoing", docsH.ListDocuments)
 	app.Get("/docs/:id", docsH.ShowDocument)
+	app.Get("/docs/:id/pack/:code", packsH.ShowPack)
+	app.Get("/docs/:id/pack/:code/group/:childCode", packsH.ShowGroup)
 
 	logger.Info("starting server", "addr", cfg.Server.Addr)
 	if err := app.Listen(cfg.Server.Addr); err != nil {
