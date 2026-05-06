@@ -6,91 +6,119 @@ import (
 	"github.com/SoulStalker/chz-api-client/internal/model"
 )
 
+func docTitle(doc *model.DocInfoResponse) string {
+	if doc.InvoiceNumber != "" {
+		return doc.InvoiceNumber
+	}
+	return doc.Number
+}
+
+func senderDisplay(doc *model.DocInfoResponse) string {
+	if doc.SenderName != "" {
+		return doc.SenderName
+	}
+	return doc.SenderInn
+}
+
 templ DocumentDetail(doc *model.DocInfoResponse, errMsg string) {
-	@Layout("Документ") {
-		<div class="mb-4">
-			<a href="/docs" class="text-blue-600 hover:underline text-sm">← Назад к списку</a>
+	@Layout("Документ", "docs") {
+		<div class="mb-6">
+			<a href="/docs" class="text-blue-600 hover:text-blue-800 text-sm font-medium">← Документы</a>
 		</div>
 		if errMsg != "" {
-			<div class="mb-4 bg-red-50 border border-red-300 rounded p-4">
-				<p class="text-red-700 font-medium">Ошибка загрузки документа</p>
-				<p class="text-red-600 text-sm mt-1 font-mono">{ errMsg }</p>
+			<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+				<p class="text-red-700 font-medium text-sm">Ошибка загрузки документа</p>
+				<p class="text-red-600 text-xs mt-1 font-mono">{ errMsg }</p>
 			</div>
 		}
 		if doc != nil {
-			<div class="bg-white shadow rounded p-6 mb-6">
-				<h1 class="text-2xl font-bold mb-4">Документ { doc.Number }</h1>
-				<dl class="grid grid-cols-2 gap-4 text-sm">
+			<div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+				<div class="flex items-start justify-between mb-5">
 					<div>
-						<dt class="font-medium text-gray-500">Тип</dt>
-						<dd class="font-mono">{ doc.Type }</dd>
+						<h1 class="text-2xl font-bold text-gray-900">{ docTitle(doc) }</h1>
+						<p class="text-gray-500 mt-1">{ senderDisplay(doc) }</p>
+					</div>
+					<div class="mt-1">
+						@StatusBadge(doc.Status)
+					</div>
+				</div>
+				<dl class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 text-sm border-t border-gray-100 pt-5">
+					<div>
+						<dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Дата</dt>
+						<dd class="text-gray-900">{ fmtDate(doc.DocDate) }</dd>
 					</div>
 					<div>
-						<dt class="font-medium text-gray-500">Дата</dt>
-						<dd>{ doc.DocDate }</dd>
+						<dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">ИНН поставщика</dt>
+						<dd class="font-mono text-gray-700">{ doc.SenderInn }</dd>
 					</div>
 					<div>
-						<dt class="font-medium text-gray-500">ИНН отправителя</dt>
-						<dd class="font-mono">{ doc.SenderInn }</dd>
+						<dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Получатель</dt>
+						<dd class="text-gray-900">{ doc.ReceiverName }</dd>
 					</div>
 					<div>
-						<dt class="font-medium text-gray-500">Статус</dt>
-						<dd>{ statusLabel(doc.Status) }</dd>
+						<dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Тип</dt>
+						<dd class="text-gray-700">{ docTypeLabel(doc.Type) }</dd>
 					</div>
 				</dl>
+				<details class="mt-5 border-t border-gray-100 pt-3">
+					<summary class="text-xs text-gray-400 cursor-pointer hover:text-gray-500 select-none">Системный номер</summary>
+					<p class="mt-1 font-mono text-xs text-gray-400 break-all">{ doc.Number }</p>
+				</details>
 			</div>
-			<h2 class="text-xl font-semibold mb-3">Товарные позиции</h2>
+			<h2 class="text-lg font-semibold text-gray-900 mb-3">Товарные позиции</h2>
 			if len(doc.Body.Products) > 0 {
-				<p class="text-sm text-gray-500 mb-3">Позиций: { strconv.Itoa(len(doc.Body.Products)) }</p>
-				<div class="bg-white shadow rounded overflow-x-auto">
+				<div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+					<div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+						<span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{ strconv.Itoa(len(doc.Body.Products)) } позиций</span>
+					</div>
 					<table class="w-full text-sm">
-						<thead class="bg-gray-100">
-							<tr>
-								<th class="px-4 py-2 text-left">#</th>
-								<th class="px-4 py-2 text-left">Код маркировки</th>
-								<th class="px-4 py-2 text-left">GTIN</th>
-								<th class="px-4 py-2 text-left">Наименование</th>
-								<th class="px-4 py-2 text-right">Кол-во</th>
-								<th class="px-4 py-2 text-left">Тип кода</th>
+						<thead>
+							<tr class="border-b border-gray-200">
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-10">#</th>
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Код маркировки</th>
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">GTIN</th>
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Наименование</th>
+								<th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Кол-во</th>
 							</tr>
 						</thead>
-						<tbody>
+						<tbody class="divide-y divide-gray-100">
 							for i, p := range doc.Body.Products {
-								<tr class="border-t hover:bg-gray-50">
-									<td class="px-4 py-2 text-gray-400">{ strconv.Itoa(i + 1) }</td>
-									<td class="px-4 py-2 font-mono text-xs break-all">{ p.Code }</td>
-									<td class="px-4 py-2 font-mono text-xs">{ p.GTIN }</td>
-									<td class="px-4 py-2">{ p.Name }</td>
-									<td class="px-4 py-2 text-right font-mono">{ p.Quantity }</td>
-									<td class="px-4 py-2 text-xs text-gray-500">{ p.CodeType }</td>
+								<tr class="hover:bg-gray-50">
+									<td class="px-5 py-3 text-gray-400 text-xs">{ strconv.Itoa(i + 1) }</td>
+									<td class="px-5 py-3 font-mono text-xs text-gray-700 break-all">{ p.Code }</td>
+									<td class="px-5 py-3 font-mono text-xs text-gray-500">{ p.GTIN }</td>
+									<td class="px-5 py-3 text-gray-800">{ p.Name }</td>
+									<td class="px-5 py-3 text-right font-mono text-gray-700">{ p.Quantity }</td>
 								</tr>
 							}
 						</tbody>
 					</table>
 				</div>
 			} else if len(doc.Body.CisesList) > 0 {
-				<p class="text-sm text-gray-500 mb-3">КИ: { strconv.Itoa(len(doc.Body.CisesList)) }</p>
-				<div class="bg-white shadow rounded overflow-x-auto">
+				<div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+					<div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+						<span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{ strconv.Itoa(len(doc.Body.CisesList)) } КИ</span>
+					</div>
 					<table class="w-full text-sm">
-						<thead class="bg-gray-100">
-							<tr>
-								<th class="px-4 py-2 text-left">#</th>
-								<th class="px-4 py-2 text-left">Код маркировки</th>
+						<thead>
+							<tr class="border-b border-gray-200">
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-10">#</th>
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Код маркировки</th>
 							</tr>
 						</thead>
-						<tbody>
+						<tbody class="divide-y divide-gray-100">
 							for i, cis := range doc.Body.CisesList {
-								<tr class="border-t hover:bg-gray-50">
-									<td class="px-4 py-2 text-gray-400">{ strconv.Itoa(i + 1) }</td>
-									<td class="px-4 py-2 font-mono text-xs break-all">{ cis }</td>
+								<tr class="hover:bg-gray-50">
+									<td class="px-5 py-3 text-gray-400 text-xs">{ strconv.Itoa(i + 1) }</td>
+									<td class="px-5 py-3 font-mono text-xs text-gray-700 break-all">{ cis }</td>
 								</tr>
 							}
 						</tbody>
 					</table>
 				</div>
 			} else {
-				<div class="bg-white shadow rounded p-8 text-center text-gray-500">
-					Позиций не найдено
+				<div class="bg-white border border-gray-200 rounded-lg p-12 text-center">
+					<p class="text-gray-400 text-sm">Позиций не найдено</p>
 				</div>
 			}
 		}

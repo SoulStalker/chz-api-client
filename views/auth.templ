@@ -3,9 +3,9 @@ package views
 import "strconv"
 
 templ Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText string) {
-	@Layout("Авторизация ЧЗ") {
-		<h1 class="text-2xl font-bold mb-4">Авторизация в ЧЗ (GIS MT)</h1>
-		<div class="bg-white shadow rounded p-6 max-w-xl">
+	@Layout("Авторизация ЧЗ", "auth") {
+		<h1 class="text-2xl font-bold text-gray-900 mb-6">Авторизация в ЧЗ</h1>
+		<div class="bg-white border border-gray-200 rounded-lg p-6 max-w-xl">
 			<form method="POST" action="/auth" class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700 mb-1">Отпечаток сертификата (SHA1)</label>
@@ -13,66 +13,64 @@ templ Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText 
 						type="text"
 						name="thumbprint"
 						value={ thumbprint }
-						class="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+						class="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="SHA1 hex thumbprint"
 						required
 					/>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">ИНН организации (необязательно)</label>
+					<label class="block text-sm font-medium text-gray-700 mb-1">ИНН организации</label>
 					<input
 						type="text"
 						name="inn"
 						value={ inn }
-						class="w-full border border-gray-300 rounded px-3 py-2"
+						class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="10 или 12 цифр"
 					/>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">МЧД (GUID доверенности, для личного сертификата)</label>
+					<label class="block text-sm font-medium text-gray-700 mb-1">МЧД (GUID доверенности)</label>
 					<input
 						type="text"
 						name="mchd"
 						value={ mchd }
-						class="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+						class="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 					/>
 				</div>
 				<div>
-					<label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
-						<input type="checkbox" name="show_curl" value="on" checked?={ showCurl } class="w-4 h-4"/>
-						Отображать curl запроса
+					<label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+						<input type="checkbox" name="show_curl" value="on" checked?={ showCurl } class="w-4 h-4 rounded"/>
+						Показать curl-команды
 					</label>
 				</div>
-				<button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+				<button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
 					Получить токен
 				</button>
 			</form>
 		</div>
 		if errMsg != "" {
-			<div class="mt-6 bg-red-50 border border-red-300 rounded p-4 max-w-xl">
-				<p class="text-red-700 font-medium">Ошибка авторизации</p>
-				<p class="text-red-600 text-sm mt-1 font-mono break-all">{ errMsg }</p>
+			<div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-xl">
+				<p class="text-red-700 font-medium text-sm">Ошибка авторизации</p>
+				<p class="text-red-600 text-xs mt-1 font-mono break-all">{ errMsg }</p>
 			</div>
 		}
 		if token != "" {
-			<div class="mt-6 bg-green-50 border border-green-300 rounded p-4 max-w-xl">
-				<p class="text-green-700 font-medium">Токен получен успешно</p>
-				<p class="text-sm text-gray-600 mt-1">Длина: { strconv.Itoa(len(token)) } символов</p>
+			<div class="mt-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-xl">
+				<p class="text-green-700 font-medium text-sm">Токен получен</p>
+				<p class="text-xs text-gray-500 mt-1">Длина: { strconv.Itoa(len(token)) } символов</p>
 				if len(token) > 40 {
-					<p class="text-xs font-mono text-gray-700 mt-2 break-all">{ token[:40] }…</p>
+					<p class="text-xs font-mono text-gray-600 mt-2 break-all">{ token[:40] }…</p>
 				} else {
-					<p class="text-xs font-mono text-gray-700 mt-2 break-all">{ token }</p>
+					<p class="text-xs font-mono text-gray-600 mt-2 break-all">{ token }</p>
 				}
-				<p class="mt-3 text-sm">
-					<a href="/docs" class="text-blue-600 underline font-medium">Перейти к документам →</a>
-				</p>
+				<a href="/docs" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">Перейти к документам →</a>
 			</div>
 		}
 		if curlText != "" {
-			<div class="mt-6 max-w-xl">
-				<p class="text-sm font-medium text-gray-700 mb-2">curl команды</p>
-				<div class="bg-gray-900 rounded p-4 overflow-x-auto">
+			<div class="mt-4 max-w-xl">
+				<p class="text-sm font-medium text-gray-700 mb-2">curl-команды</p>
+				<div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
 					<pre class="text-xs text-green-400 whitespace-pre-wrap break-all">{ curlText }</pre>
 				</div>
 			</div>

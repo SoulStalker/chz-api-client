@@ -3,25 +3,33 @@ package views
 import "github.com/SoulStalker/chz-api-client/internal/model"
 
 templ Certs(certs []model.Certificate) {
-	@Layout("Сертификаты") {
-		<h1 class="text-2xl font-bold mb-4">Сертификаты sign-service</h1>
-		<table class="w-full bg-white shadow rounded">
-			<thead class="bg-gray-100">
-				<tr>
-					<th class="px-4 py-2 text-left">Отпечаток</th>
-					<th class="px-4 py-2 text-left">Субъект</th>
-					<th class="px-4 py-2 text-left">Действует до</th>
-				</tr>
-			</thead>
-			<tbody>
-				for _, cert := range certs {
-					<tr class="border-t">
-						<td class="px-4 py-2 font-mono text-xs">{ cert.Thumbprint }</td>
-						<td class="px-4 py-2">{ cert.Subject }</td>
-						<td class="px-4 py-2">{ cert.NotAfter }</td>
-					</tr>
-				}
-			</tbody>
-		</table>
+	@Layout("Сертификаты", "certs") {
+		<h1 class="text-2xl font-bold text-gray-900 mb-6">Сертификаты sign-service</h1>
+		if len(certs) == 0 {
+			<div class="bg-white border border-gray-200 rounded-lg p-12 text-center">
+				<p class="text-gray-400 text-sm">Сертификатов не найдено</p>
+			</div>
+		} else {
+			<div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="bg-gray-50 border-b border-gray-200">
+							<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Отпечаток</th>
+							<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Субъект</th>
+							<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Действует до</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						for _, cert := range certs {
+							<tr class="hover:bg-gray-50 transition-colors">
+								<td class="px-5 py-3 font-mono text-xs text-gray-600">{ cert.Thumbprint }</td>
+								<td class="px-5 py-3 text-gray-800">{ cert.Subject }</td>
+								<td class="px-5 py-3 text-gray-700">{ cert.NotAfter }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
 	}
 }

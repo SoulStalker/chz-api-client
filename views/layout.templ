@@ -1,26 +1,36 @@
 package views
 
-templ Layout(title string) {
+templ Layout(title, section string) {
 	<!DOCTYPE html>
 	<html lang="ru">
 	<head>
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-		<title>{ title } — EDO Client</title>
+		<title>{ title } — ЧЗ Клиент</title>
 		<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
 	</head>
-	<body class="bg-gray-50 text-gray-900">
-		<nav class="bg-white shadow mb-6">
-			<div class="max-w-7xl mx-auto px-4 py-3 flex gap-6">
-				<a href="/certs" class="text-blue-600 hover:underline">Сертификаты</a>
-				<a href="/auth" class="text-blue-600 hover:underline">Авторизация ЧЗ</a>
-				<a href="/orgs" class="text-blue-600 hover:underline">Организации</a>
-				<a href="/docs" class="text-blue-600 hover:underline">Документы</a>
+	<body class="bg-gray-50 text-gray-900 min-h-screen">
+		<nav class="bg-white border-b border-gray-200 mb-8">
+			<div class="max-w-7xl mx-auto px-4 flex items-center h-14">
+				<a href="/" class="font-bold text-gray-800 mr-6">ЧЗ Клиент</a>
+				<div class="flex items-center gap-1">
+					@navLink("/certs", "Сертификаты", section == "certs")
+					@navLink("/auth", "Авторизация", section == "auth")
+					@navLink("/docs", "Документы", section == "docs")
+				</div>
 			</div>
 		</nav>
-		<div class="max-w-7xl mx-auto px-4">
+		<div class="max-w-7xl mx-auto px-4 pb-12">
 			{ children... }
 		</div>
 	</body>
 	</html>
+}
+
+templ navLink(href, label string, active bool) {
+	if active {
+		<a href={ templ.SafeURL(href) } class="px-3 py-1.5 rounded text-sm font-medium bg-blue-50 text-blue-700">{ label }</a>
+	} else {
+		<a href={ templ.SafeURL(href) } class="px-3 py-1.5 rounded text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900">{ label }</a>
+	}
 }

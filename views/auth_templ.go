@@ -43,7 +43,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h1 class=\"text-2xl font-bold mb-4\">Авторизация в ЧЗ (GIS MT)</h1><div class=\"bg-white shadow rounded p-6 max-w-xl\"><form method=\"POST\" action=\"/auth\" class=\"space-y-4\"><div><label class=\"block text-sm font-medium text-gray-700 mb-1\">Отпечаток сертификата (SHA1)</label> <input type=\"text\" name=\"thumbprint\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h1 class=\"text-2xl font-bold text-gray-900 mb-6\">Авторизация в ЧЗ</h1><div class=\"bg-white border border-gray-200 rounded-lg p-6 max-w-xl\"><form method=\"POST\" action=\"/auth\" class=\"space-y-4\"><div><label class=\"block text-sm font-medium text-gray-700 mb-1\">Отпечаток сертификата (SHA1)</label> <input type=\"text\" name=\"thumbprint\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -56,7 +56,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm\" placeholder=\"SHA1 hex thumbprint\" required></div><div><label class=\"block text-sm font-medium text-gray-700 mb-1\">ИНН организации (необязательно)</label> <input type=\"text\" name=\"inn\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent\" placeholder=\"SHA1 hex thumbprint\" required></div><div><label class=\"block text-sm font-medium text-gray-700 mb-1\">ИНН организации</label> <input type=\"text\" name=\"inn\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -69,7 +69,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"w-full border border-gray-300 rounded px-3 py-2\" placeholder=\"10 или 12 цифр\"></div><div><label class=\"block text-sm font-medium text-gray-700 mb-1\">МЧД (GUID доверенности, для личного сертификата)</label> <input type=\"text\" name=\"mchd\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent\" placeholder=\"10 или 12 цифр\"></div><div><label class=\"block text-sm font-medium text-gray-700 mb-1\">МЧД (GUID доверенности)</label> <input type=\"text\" name=\"mchd\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -82,7 +82,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm\" placeholder=\"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\"></div><div><label class=\"flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none\"><input type=\"checkbox\" name=\"show_curl\" value=\"on\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent\" placeholder=\"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\"></div><div><label class=\"flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none\"><input type=\"checkbox\" name=\"show_curl\" value=\"on\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -92,12 +92,12 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " class=\"w-4 h-4\"> Отображать curl запроса</label></div><button type=\"submit\" class=\"bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700\">Получить токен</button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " class=\"w-4 h-4 rounded\"> Показать curl-команды</label></div><button type=\"submit\" class=\"bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors\">Получить токен</button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if errMsg != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"mt-6 bg-red-50 border border-red-300 rounded p-4 max-w-xl\"><p class=\"text-red-700 font-medium\">Ошибка авторизации</p><p class=\"text-red-600 text-sm mt-1 font-mono break-all\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"mt-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-xl\"><p class=\"text-red-700 font-medium text-sm\">Ошибка авторизации</p><p class=\"text-red-600 text-xs mt-1 font-mono break-all\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -120,7 +120,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 				return templ_7745c5c3_Err
 			}
 			if token != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"mt-6 bg-green-50 border border-green-300 rounded p-4 max-w-xl\"><p class=\"text-green-700 font-medium\">Токен получен успешно</p><p class=\"text-sm text-gray-600 mt-1\">Длина: ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"mt-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-xl\"><p class=\"text-green-700 font-medium text-sm\">Токен получен</p><p class=\"text-xs text-gray-500 mt-1\">Длина: ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -138,7 +138,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 					return templ_7745c5c3_Err
 				}
 				if len(token) > 40 {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<p class=\"text-xs font-mono text-gray-700 mt-2 break-all\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<p class=\"text-xs font-mono text-gray-600 mt-2 break-all\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -156,7 +156,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<p class=\"text-xs font-mono text-gray-700 mt-2 break-all\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<p class=\"text-xs font-mono text-gray-600 mt-2 break-all\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -174,7 +174,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<p class=\"mt-3 text-sm\"><a href=\"/docs\" class=\"text-blue-600 underline font-medium\">Перейти к документам →</a></p></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<a href=\"/docs\" class=\"inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium\">Перейти к документам →</a></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -184,14 +184,14 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 				return templ_7745c5c3_Err
 			}
 			if curlText != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"mt-6 max-w-xl\"><p class=\"text-sm font-medium text-gray-700 mb-2\">curl команды</p><div class=\"bg-gray-900 rounded p-4 overflow-x-auto\"><pre class=\"text-xs text-green-400 whitespace-pre-wrap break-all\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"mt-4 max-w-xl\"><p class=\"text-sm font-medium text-gray-700 mb-2\">curl-команды</p><div class=\"bg-gray-900 rounded-lg p-4 overflow-x-auto\"><pre class=\"text-xs text-green-400 whitespace-pre-wrap break-all\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(curlText)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth.templ`, Line: 76, Col: 81}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth.templ`, Line: 74, Col: 81}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -204,7 +204,7 @@ func Auth(thumbprint, inn, mchd, token, errMsg string, showCurl bool, curlText s
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout("Авторизация ЧЗ").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout("Авторизация ЧЗ", "auth").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
