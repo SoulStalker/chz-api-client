@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -118,9 +119,28 @@ func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {
 			return c.Redirect("/auth")
 		}
 		c.Type("html")
-		return views.DocumentDetail(docID, nil, errMsg(err), from).Render(c.Context(), c.Response().BodyWriter())
+		return views.DocumentDetail(docID, nil, nil, errMsg(err), from).Render(c.Context(), c.Response().BodyWriter())
+	}
+
+	cisInfoMap := make(map[string]model.CisInfo)
+	var codes []string
+	for _, p := range info.Body.Products {
+		codes = append(codes, p.Code)
+	}
+	if len(codes) == 0 {
+		codes = info.Body.CisesList
+	}
+	if len(codes) > 0 {
+		cisInfos, ciErr := h.crpt.GetCisInfo(c.Context(), token, codes)
+		if ciErr != nil {
+			slog.Warn("cises/info failed, continuing without enrichment", "err", ciErr)
+		} else {
+			for _, ci := range cisInfos {
+				cisInfoMap[ci.CisKey] = ci
+			}
+		}
 	}
 
 	c.Type("html")
-	return views.DocumentDetail(docID, info, "", from).Render(c.Context(), c.Response().BodyWriter())
+	return views.DocumentDetail(docID, info, cisInfoMap, "", from).Render(c.Context(), c.Response().BodyWriter())
 }
