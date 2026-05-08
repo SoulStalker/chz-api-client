@@ -54,6 +54,7 @@ func main() {
 	app.Get("/docs/incoming", docsH.ListDocuments)
 	app.Get("/docs/outgoing", docsH.ListDocuments)
 	app.Get("/docs/:id", docsH.ShowDocument)
+	app.Get("/docs/:id/export.xml", docsH.ExportDocumentXML)
 	app.Get("/docs/:id/pack/:code", packsH.ShowPack)
 	app.Get("/docs/:id/pack/:code/group/:childCode", packsH.ShowGroup)
 

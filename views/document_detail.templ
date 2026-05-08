@@ -138,8 +138,12 @@ templ DocumentDetail(docID string, doc *model.DocInfo, cisInfos map[string]model
 						<h1 class="text-2xl font-bold text-gray-900">{ docTitle(doc) }</h1>
 						<p class="text-gray-500 mt-1">{ senderDisplay(doc) }</p>
 					</div>
-					<div class="mt-1">
+					<div class="mt-1 flex items-center gap-3">
 						@StatusBadge(doc.Status)
+						<a
+							href={ templ.SafeURL("/docs/" + docID + "/export.xml") }
+							class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-md"
+						>↓ XML</a>
 					</div>
 				</div>
 				<dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm border-t border-gray-100 pt-4">

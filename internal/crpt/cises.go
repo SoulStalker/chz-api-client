@@ -15,9 +15,29 @@ type cisInfoAPIItem struct {
 		RequestedCis       string   `json:"requestedCis"`
 		Cis                string   `json:"cis"`
 		GTIN               string   `json:"gtin"`
-		GeneralPackageType string   `json:"generalPackageType"` // BOX | UNIT | GROUP
-		Child              []string `json:"child"`              // child cis codes
+		PackageType        string   `json:"packageType"`        // LEVEL1 | LEVEL2 | UNIT (fallback)
+		GeneralPackageType string   `json:"generalPackageType"` // BOX | GROUP | UNIT (preferred)
+		Child              []string `json:"child"`
 	} `json:"cisInfo"`
+}
+
+// resolvePackType returns the canonical pack type (BOX/GROUP/UNIT).
+// CRPT fills generalPackageType for containers (BOX/GROUP) but often leaves it
+// empty for individual consumer units. packageType provides a fallback.
+func resolvePackType(general, pkg string, hasChildren bool) string {
+	if general != "" {
+		return general
+	}
+	switch pkg {
+	case "LEVEL1":
+		return "BOX"
+	case "LEVEL2":
+		return "GROUP"
+	}
+	if !hasChildren {
+		return "UNIT"
+	}
+	return pkg
 }
 
 func (c *Client) GetCisInfo(ctx context.Context, token string, codes []string) ([]model.CisInfo, error) {
@@ -55,10 +75,11 @@ func (c *Client) GetCisInfo(ctx context.Context, token string, codes []string) (
 		if key == "" {
 			key = item.CisInfo.RequestedCis
 		}
+		hasChildren := len(item.CisInfo.Child) > 0
 		result = append(result, model.CisInfo{
 			CisKey:     key,
 			GTIN:       item.CisInfo.GTIN,
-			PackType:   item.CisInfo.GeneralPackageType,
+			PackType:   resolvePackType(item.CisInfo.GeneralPackageType, item.CisInfo.PackageType, hasChildren),
 			ChildCount: len(item.CisInfo.Child),
 			ChildCodes: item.CisInfo.Child,
 		})
