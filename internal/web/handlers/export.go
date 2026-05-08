@@ -19,7 +19,7 @@ func (h *DocsHandler) ExportDocumentXML(c *fiber.Ctx) error {
 
 	docID := c.Params("id")
 
-	info, err := h.crpt.GetDocumentInfo(c.Context(), token, docID, "water")
+	info, err := h.crpt.GetDocumentInfo(c.Context(), token, docID, h.currentPG(c))
 	if err != nil {
 		if errors.Is(err, crpt.ErrUnauthorized) {
 			return c.Redirect("/auth")

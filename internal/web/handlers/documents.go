@@ -41,12 +41,24 @@ func (h *DocsHandler) token(c *fiber.Ctx) (string, bool) {
 	return h.sessions.Get(sessionID)
 }
 
+func (h *DocsHandler) currentPG(c *fiber.Ctx) string {
+	if pg := c.Query("pg"); pg != "" && model.IsValidPG(pg) {
+		c.Cookie(&fiber.Cookie{Name: "crpt_pg", Value: pg, Path: "/"})
+		return pg
+	}
+	if pg := c.Cookies("crpt_pg"); model.IsValidPG(pg) {
+		return pg
+	}
+	return "water"
+}
+
 func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 	token, ok := h.token(c)
 	if !ok {
 		return c.Redirect("/auth")
 	}
 
+	pg := h.currentPG(c)
 	isIncoming := strings.Contains(c.Path(), "incoming")
 
 	now := time.Now().UTC()
@@ -74,7 +86,7 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 	ocv := c.Query("ordered_column_value")
 
 	params := model.DocListParams{
-		PG:                 "water",
+		PG:                 pg,
 		Input:              isIncoming,
 		DateFrom:           apiDateFrom,
 		DateTo:             apiDateTo,
@@ -90,7 +102,7 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 		}
 		msg := errMsg(err)
 		c.Type("html")
-		return views.Documents(nil, false, msg, isIncoming, displayDateFrom, displayDateTo, "", "").Render(c.Context(), c.Response().BodyWriter())
+		return views.Documents(nil, false, msg, isIncoming, displayDateFrom, displayDateTo, "", "", pg, model.ProductGroups).Render(c.Context(), c.Response().BodyWriter())
 	}
 
 	var nextDID, nextOCV string
@@ -101,7 +113,7 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 	}
 
 	c.Type("html")
-	return views.Documents(result.Results, result.NextPage, "", isIncoming, displayDateFrom, displayDateTo, nextDID, nextOCV).Render(c.Context(), c.Response().BodyWriter())
+	return views.Documents(result.Results, result.NextPage, "", isIncoming, displayDateFrom, displayDateTo, nextDID, nextOCV, pg, model.ProductGroups).Render(c.Context(), c.Response().BodyWriter())
 }
 
 func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {
@@ -113,7 +125,7 @@ func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {
 	docID := c.Params("id")
 	from := c.Query("from", "incoming")
 
-	info, err := h.crpt.GetDocumentInfo(c.Context(), token, docID, "water")
+	info, err := h.crpt.GetDocumentInfo(c.Context(), token, docID, h.currentPG(c))
 	if err != nil {
 		if errors.Is(err, crpt.ErrUnauthorized) {
 			return c.Redirect("/auth")

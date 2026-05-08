@@ -77,7 +77,7 @@ templ StatusBadge(s string) {
 	}
 }
 
-templ Documents(docs []model.Document, nextPage bool, errMsg string, isIncoming bool, dateFrom string, dateTo string, nextDID string, nextOCV string) {
+templ Documents(docs []model.Document, nextPage bool, errMsg string, isIncoming bool, dateFrom string, dateTo string, nextDID string, nextOCV string, currentPG string, groups []model.ProductGroup) {
 	@Layout("Документы", "docs") {
 		<div class="flex gap-6 border-b border-gray-200 mb-6">
 			if isIncoming {
@@ -88,7 +88,19 @@ templ Documents(docs []model.Document, nextPage bool, errMsg string, isIncoming 
 				<a href="/docs/outgoing" class="pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">Исходящие</a>
 			}
 		</div>
-		<form method="GET" action={ templ.SafeURL(routeForDir(isIncoming)) } class="mb-6 flex gap-3 items-end">
+		<form method="GET" action={ templ.SafeURL(routeForDir(isIncoming)) } class="mb-6 flex gap-3 items-end flex-wrap">
+			<div>
+				<label class="block text-xs text-gray-500 mb-1">Группа товаров</label>
+				<select name="pg" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400 bg-white">
+					for _, g := range groups {
+						if g.Code == currentPG {
+							<option value={ g.Code } selected>{ g.Label }</option>
+						} else {
+							<option value={ g.Code }>{ g.Label }</option>
+						}
+					}
+				</select>
+			</div>
 			<div>
 				<label class="block text-xs text-gray-500 mb-1">Дата от</label>
 				<input type="date" name="date_from" value={ dateFrom } class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400"/>
