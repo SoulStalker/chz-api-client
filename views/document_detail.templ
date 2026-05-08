@@ -34,6 +34,7 @@ func docJSON(doc *model.DocInfo) string {
 	return string(b)
 }
 
+
 func packTypeLabel(codeType, quantity string) string {
 	switch codeType {
 	case "BOX":
@@ -61,8 +62,13 @@ func resolveProductPackType(p model.Product, cisInfos map[string]model.CisInfo) 
 }
 
 func resolveProductChildCount(p model.Product, cisInfos map[string]model.CisInfo) int {
-	if ci, ok := cisInfos[p.Code]; ok && ci.ChildCount > 0 {
-		return ci.ChildCount
+	if ci, ok := cisInfos[p.Code]; ok {
+		if ci.ChildCount > 0 {
+			return ci.ChildCount
+		}
+		if n := len(ci.Child); n > 0 {
+			return n
+		}
 	}
 	if q, err := strconv.Atoi(p.Quantity); err == nil && q > 0 {
 		return q
@@ -75,13 +81,17 @@ func isProductAggregate(p model.Product, cisInfos map[string]model.CisInfo) bool
 	case "BOX", "GROUP":
 		return true
 	case "EXEMPLARY":
-		return resolveProductChildCount(p, cisInfos) > 1
+		return resolveProductChildCount(p, cisInfos) > 0
 	}
 	return false
 }
 
 func productPackTypeLabel(p model.Product, cisInfos map[string]model.CisInfo) string {
-	return packTypeLabel(resolveProductPackType(p, cisInfos), p.Quantity)
+	qty := p.Quantity
+	if n := resolveProductChildCount(p, cisInfos); n > 0 {
+		qty = strconv.Itoa(n)
+	}
+	return packTypeLabel(resolveProductPackType(p, cisInfos), qty)
 }
 
 func productContainsLabel(p model.Product, cisInfos map[string]model.CisInfo) string {

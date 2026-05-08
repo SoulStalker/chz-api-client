@@ -1,18 +1,19 @@
 package model
 
 type CisInfo struct {
-	CisKey     string     `json:"cisKey"`
-	GTIN       string     `json:"gtin"`
-	Name       string     `json:"name"`
-	PackType   string     `json:"packType"`
-	ChildCount int        `json:"childCount"`
-	Child      []CisChild `json:"child"`
+	CisKey     string
+	GTIN       string
+	Name       string
+	PackType   string // BOX | GROUP | UNIT (from generalPackageType)
+	ChildCount int    // len(ChildCodes)
+	ChildCodes []string  // raw child codes as returned by API
+	Child      []CisChild // enriched children, populated by handlers
 }
 
 type CisChild struct {
-	CisKey     string `json:"cisKey"`
-	GTIN       string `json:"gtin"`
-	Name       string `json:"name"`
-	PackType   string `json:"packType"`
-	ChildCount int    `json:"childCount"`
+	CisKey     string
+	GTIN       string
+	Name       string
+	PackType   string
+	ChildCount int
 }
