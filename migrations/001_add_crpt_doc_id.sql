@@ -1,0 +1,1 @@
+ALTER TABLE ord_zakaz ADD COLUMN IF NOT EXISTS crpt_doc_id VARCHAR(100);

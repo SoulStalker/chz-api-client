@@ -12,6 +12,11 @@ type Config struct {
 	CRPT   CRPTConfig   `yaml:"crpt"`
 	Signer SignerConfig `yaml:"signer"`
 	Log    LogConfig    `yaml:"log"`
+	DB     DBConfig     `yaml:"db"`
+}
+
+type DBConfig struct {
+	DSN string `yaml:"dsn" env:"DB_DSN" env-required:"true"`
 }
 
 type ServerConfig struct {

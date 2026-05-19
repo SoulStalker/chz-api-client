@@ -8,6 +8,7 @@ import (
 
 	"github.com/SoulStalker/chz-api-client/internal/crpt"
 	"github.com/SoulStalker/chz-api-client/internal/model"
+	"github.com/SoulStalker/chz-api-client/internal/repository"
 	"github.com/SoulStalker/chz-api-client/internal/session"
 	"github.com/SoulStalker/chz-api-client/views"
 	"github.com/gofiber/fiber/v2"
@@ -27,10 +28,11 @@ func errMsg(err error) string {
 type DocsHandler struct {
 	crpt     *crpt.Client
 	sessions *session.Store
+	zakazy   *repository.ZakazRepo
 }
 
-func NewDocsHandler(c *crpt.Client, sessions *session.Store) *DocsHandler {
-	return &DocsHandler{crpt: c, sessions: sessions}
+func NewDocsHandler(c *crpt.Client, sessions *session.Store, zakazy *repository.ZakazRepo) *DocsHandler {
+	return &DocsHandler{crpt: c, sessions: sessions, zakazy: zakazy}
 }
 
 func (h *DocsHandler) token(c *fiber.Ctx) (string, bool) {
@@ -102,7 +104,7 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 		}
 		msg := errMsg(err)
 		c.Type("html")
-		return views.Documents(nil, false, msg, isIncoming, displayDateFrom, displayDateTo, "", "", pg, model.ProductGroups).Render(c.Context(), c.Response().BodyWriter())
+		return views.Documents(nil, false, msg, isIncoming, displayDateFrom, displayDateTo, "", "", pg, model.ProductGroups, nil).Render(c.Context(), c.Response().BodyWriter())
 	}
 
 	var nextDID, nextOCV string
@@ -112,8 +114,19 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 		nextOCV = last.DocDate
 	}
 
+	zakazMap := map[string]model.Zakaz{}
+	if h.zakazy != nil && len(result.Results) > 0 {
+		ids := make([]string, len(result.Results))
+		for i, d := range result.Results {
+			ids[i] = d.Number
+		}
+		if m, err := h.zakazy.FindByDocIDs(c.Context(), ids); err == nil {
+			zakazMap = m
+		}
+	}
+
 	c.Type("html")
-	return views.Documents(result.Results, result.NextPage, "", isIncoming, displayDateFrom, displayDateTo, nextDID, nextOCV, pg, model.ProductGroups).Render(c.Context(), c.Response().BodyWriter())
+	return views.Documents(result.Results, result.NextPage, "", isIncoming, displayDateFrom, displayDateTo, nextDID, nextOCV, pg, model.ProductGroups, zakazMap).Render(c.Context(), c.Response().BodyWriter())
 }
 
 func (h *DocsHandler) ShowDocument(c *fiber.Ctx) error {

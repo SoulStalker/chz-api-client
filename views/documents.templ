@@ -77,7 +77,7 @@ templ StatusBadge(s string) {
 	}
 }
 
-templ Documents(docs []model.Document, nextPage bool, errMsg string, isIncoming bool, dateFrom string, dateTo string, nextDID string, nextOCV string, currentPG string, groups []model.ProductGroup) {
+templ Documents(docs []model.Document, nextPage bool, errMsg string, isIncoming bool, dateFrom string, dateTo string, nextDID string, nextOCV string, currentPG string, groups []model.ProductGroup, zakazMap map[string]model.Zakaz) {
 	@Layout("Документы", "docs") {
 		<div class="flex gap-6 border-b border-gray-200 mb-6">
 			if isIncoming {
@@ -136,6 +136,7 @@ templ Documents(docs []model.Document, nextPage bool, errMsg string, isIncoming 
 								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">ИНН</th>
 								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Тип</th>
 								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Статус</th>
+								<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Заказ WMS</th>
 								<th class="px-5 py-3"></th>
 							</tr>
 						</thead>
@@ -148,6 +149,13 @@ templ Documents(docs []model.Document, nextPage bool, errMsg string, isIncoming 
 									<td class="px-5 py-3 font-mono text-xs text-gray-500">{ doc.SenderInn }</td>
 									<td class="px-5 py-3 text-gray-600">{ docTypeLabel(doc.Type) }</td>
 									<td class="px-5 py-3">@StatusBadge(doc.Status)</td>
+									<td class="px-5 py-3">
+										if z, ok := zakazMap[doc.Number]; ok {
+											<a href={ templ.SafeURL("/zakazy/" + z.Kod) } class="font-mono text-xs text-green-700 hover:text-green-900">{ z.Kod }</a>
+										} else {
+											<span class="text-gray-300 text-xs">—</span>
+										}
+									</td>
 									<td class="px-5 py-3 text-right">
 										<a href={ templ.SafeURL("/docs/" + doc.Number + "?from=" + docDirection(isIncoming)) } class="text-blue-600 hover:text-blue-800 text-xs font-medium">Детали →</a>
 									</td>

@@ -12,3 +12,6 @@ signer:
 
 log:
   level: "info"
+
+db:
+  dsn: "postgres://user:password@localhost:5432/dbname?sslmode=disable"

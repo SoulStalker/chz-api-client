@@ -16,6 +16,7 @@ type ExportDocument struct {
 	ReceiverINN  string       `xml:"ПолучательИНН,attr"`
 	ReceiverName string       `xml:"ПолучательНаименование,attr"`
 	Status       string       `xml:"Статус,attr"`
+	ZakazKod     string       `xml:"КодЗаказа,attr,omitempty"`
 	Codes        []ExportCode `xml:"КМ"`
 }
 
