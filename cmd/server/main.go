@@ -1,17 +1,20 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log/slog"
 	"os"
 
 	"github.com/SoulStalker/chz-api-client/config"
 	"github.com/SoulStalker/chz-api-client/internal/crpt"
+	"github.com/SoulStalker/chz-api-client/internal/repository"
 	"github.com/SoulStalker/chz-api-client/internal/session"
 	internalsigner "github.com/SoulStalker/chz-api-client/internal/signer"
 	"github.com/SoulStalker/chz-api-client/internal/web/handlers"
 	"github.com/SoulStalker/chz-api-client/internal/web/middleware"
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -32,10 +35,20 @@ func main() {
 	crptClient := crpt.New(cfg.CRPT.BaseURL, signerClient)
 	sessions := session.NewStore()
 
+	pool, err := pgxpool.New(context.Background(), cfg.DB.DSN)
+	if err != nil {
+		logger.Error("db connect", "err", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	zakazRepo := repository.NewZakazRepo(pool)
+
 	certsH := handlers.NewCertsHandler(signerClient)
 	authH := handlers.NewAuthHandler(crptClient, sessions, cfg.CRPT.Thumbprint, cfg.CRPT.INN, cfg.CRPT.MCHD)
-	docsH := handlers.NewDocsHandler(crptClient, sessions)
+	docsH := handlers.NewDocsHandler(crptClient, sessions, zakazRepo)
 	packsH := handlers.NewPacksHandler(crptClient, sessions)
+	zakazH := handlers.NewZakazHandler(zakazRepo, crptClient, sessions)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -57,6 +70,11 @@ func main() {
 	app.Get("/docs/:id/export.xml", docsH.ExportDocumentXML)
 	app.Get("/docs/:id/pack/:code", packsH.ShowPack)
 	app.Get("/docs/:id/pack/:code/group/:childCode", packsH.ShowGroup)
+
+	app.Get("/zakazy", zakazH.List)
+	app.Get("/zakazy/:kod", zakazH.Show)
+	app.Post("/zakazy/:kod/match", zakazH.Match)
+	app.Post("/zakazy/:kod/unmatch", zakazH.Unmatch)
 
 	logger.Info("starting server", "addr", cfg.Server.Addr)
 	if err := app.Listen(cfg.Server.Addr); err != nil {

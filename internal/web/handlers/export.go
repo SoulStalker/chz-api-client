@@ -9,6 +9,7 @@ import (
 	"github.com/SoulStalker/chz-api-client/internal/crpt"
 	"github.com/SoulStalker/chz-api-client/internal/model"
 	"github.com/gofiber/fiber/v2"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 func (h *DocsHandler) ExportDocumentXML(c *fiber.Ctx) error {
@@ -40,6 +41,15 @@ func (h *DocsHandler) ExportDocumentXML(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
+	var zakazKod string
+	if h.zakazy != nil {
+		if z, err := h.zakazy.FindByCRPTDoc(c.Context(), docID); err == nil {
+			zakazKod = z.Kod
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Warn("export: zakaz lookup failed", "err", err)
+		}
+	}
+
 	export := model.ExportRoot{
 		Version: "1.0",
 		Document: model.ExportDocument{
@@ -50,6 +60,7 @@ func (h *DocsHandler) ExportDocumentXML(c *fiber.Ctx) error {
 			ReceiverINN:  info.ReceiverInn,
 			ReceiverName: info.ReceiverName,
 			Status:       info.Status,
+			ZakazKod:     zakazKod,
 			Codes:        codes,
 		},
 	}
