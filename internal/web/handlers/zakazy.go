@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/SoulStalker/chz-api-client/internal/crpt"
@@ -53,20 +55,22 @@ func (h *ZakazHandler) List(c *fiber.Ctx) error {
 		}
 	}
 
+	inn := c.Query("inn")
+
 	page := 0
 	if v := c.QueryInt("page", 0); v > 0 {
 		page = v
 	}
 	offset := page * zakazPageSize
 
-	zakazy, total, err := h.repo.List(c.Context(), dateFrom, dateTo, offset, zakazPageSize)
+	zakazy, total, err := h.repo.List(c.Context(), dateFrom, dateTo, inn, offset, zakazPageSize)
 	if err != nil {
 		c.Type("html")
-		return views.Zakazy(nil, 0, 0, 0, "", displayFrom, displayTo).Render(c.Context(), c.Response().BodyWriter())
+		return views.Zakazy(nil, 0, 0, 0, err.Error(), displayFrom, displayTo, inn).Render(c.Context(), c.Response().BodyWriter())
 	}
 
 	c.Type("html")
-	return views.Zakazy(zakazy, total, page, zakazPageSize, "", displayFrom, displayTo).Render(c.Context(), c.Response().BodyWriter())
+	return views.Zakazy(zakazy, total, page, zakazPageSize, "", displayFrom, displayTo, inn).Render(c.Context(), c.Response().BodyWriter())
 }
 
 func (h *ZakazHandler) Show(c *fiber.Ctx) error {
@@ -102,8 +106,31 @@ func (h *ZakazHandler) Show(c *fiber.Ctx) error {
 		return c.Redirect("/auth")
 	}
 
+	// Параллельно загружаем строки каждого кандидата для отображения деталей.
+	candidateDocs := make([]model.CandidateDoc, len(candidates))
+	if len(candidates) > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		for i, doc := range candidates {
+			wg.Add(1)
+			go func(idx int, d model.Document) {
+				defer wg.Done()
+				cd := model.CandidateDoc{Document: d}
+				if info, err := h.crpt.GetDocumentInfo(ctx, token, d.Number, "water"); err == nil {
+					cd.Products = info.Body.Products
+				}
+				mu.Lock()
+				candidateDocs[idx] = cd
+				mu.Unlock()
+			}(i, doc)
+		}
+		wg.Wait()
+	}
+
 	c.Type("html")
-	return views.ZakazDetail(zakaz, lines, candidates, "").Render(c.Context(), c.Response().BodyWriter())
+	return views.ZakazDetail(zakaz, lines, candidateDocs, "").Render(c.Context(), c.Response().BodyWriter())
 }
 
 func (h *ZakazHandler) Match(c *fiber.Ctx) error {

@@ -61,3 +61,9 @@ type Product struct {
 	Quantity string `json:"quantity"`
 	StrNum   int    `json:"strNum"`
 }
+
+// CandidateDoc — документ CRPT с загруженными строками для экрана привязки заказа.
+type CandidateDoc struct {
+	Document
+	Products []Product
+}

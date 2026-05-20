@@ -19,11 +19,14 @@ func fmtSumma(v float64) string {
 	return fmt.Sprintf("%.2f", v)
 }
 
-func zakazPageHref(dateFrom, dateTo string, page int) string {
+func zakazPageHref(dateFrom, dateTo, inn string, page int) string {
+	if inn != "" {
+		return fmt.Sprintf("/zakazy?date_from=%s&date_to=%s&inn=%s&page=%d", dateFrom, dateTo, inn, page)
+	}
 	return fmt.Sprintf("/zakazy?date_from=%s&date_to=%s&page=%d", dateFrom, dateTo, page)
 }
 
-templ Zakazy(zakazy []model.Zakaz, total, page, pageSize int, errMsg string, dateFrom string, dateTo string) {
+templ Zakazy(zakazy []model.Zakaz, total, page, pageSize int, errMsg string, dateFrom string, dateTo string, inn string) {
 	@Layout("Заказы WMS", "zakazy") {
 		<h1 class="text-xl font-semibold text-gray-900 mb-6">Заказы WMS</h1>
 		<form method="GET" action="/zakazy" class="mb-6 flex gap-3 items-end flex-wrap">
@@ -34,6 +37,10 @@ templ Zakazy(zakazy []model.Zakaz, total, page, pageSize int, errMsg string, dat
 			<div>
 				<label class="block text-xs text-gray-500 mb-1">Дата до</label>
 				<input type="date" name="date_to" value={ dateTo } class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400"/>
+			</div>
+			<div>
+				<label class="block text-xs text-gray-500 mb-1">ИНН поставщика</label>
+				<input type="text" name="inn" value={ inn } placeholder="Все" class="border border-gray-300 rounded px-3 py-1.5 text-sm font-mono focus:outline-none focus:border-blue-400 w-36"/>
 			</div>
 			<button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Применить</button>
 		</form>
@@ -93,10 +100,10 @@ templ Zakazy(zakazy []model.Zakaz, total, page, pageSize int, errMsg string, dat
 			</div>
 			<div class="mt-4 flex gap-3 justify-center">
 				if page > 0 {
-					<a href={ templ.SafeURL(zakazPageHref(dateFrom, dateTo, page-1)) } class="inline-block bg-white border border-gray-300 text-gray-700 px-5 py-2 rounded text-sm hover:bg-gray-50">← Предыдущая</a>
+					<a href={ templ.SafeURL(zakazPageHref(dateFrom, dateTo, inn, page-1)) } class="inline-block bg-white border border-gray-300 text-gray-700 px-5 py-2 rounded text-sm hover:bg-gray-50">← Предыдущая</a>
 				}
 				if (page+1)*pageSize < total {
-					<a href={ templ.SafeURL(zakazPageHref(dateFrom, dateTo, page+1)) } class="inline-block bg-white border border-gray-300 text-gray-700 px-5 py-2 rounded text-sm hover:bg-gray-50">Следующая →</a>
+					<a href={ templ.SafeURL(zakazPageHref(dateFrom, dateTo, inn, page+1)) } class="inline-block bg-white border border-gray-300 text-gray-700 px-5 py-2 rounded text-sm hover:bg-gray-50">Следующая →</a>
 				}
 			</div>
 		}

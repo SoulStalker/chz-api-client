@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/SoulStalker/chz-api-client/internal/model"
@@ -31,15 +32,19 @@ func scanZakaz(row interface {
 	return z, err
 }
 
-func (r *ZakazRepo) List(ctx context.Context, dateFrom, dateTo time.Time, offset, limit int) ([]model.Zakaz, int, error) {
-	const q = `
-		SELECT` + zakazColumns + `
-		FROM ord_zakaz z
-		WHERE z.data >= $1 AND z.data <= $2
-		ORDER BY z.data DESC, z.kod
-		LIMIT $3 OFFSET $4`
+func (r *ZakazRepo) List(ctx context.Context, dateFrom, dateTo time.Time, inn string, offset, limit int) ([]model.Zakaz, int, error) {
+	args := []any{dateFrom, dateTo}
+	innClause := ""
+	if inn != "" {
+		args = append(args, inn)
+		innClause = " AND z.post_inn = $3"
+	}
 
-	rows, err := r.pool.Query(ctx, q, dateFrom, dateTo, limit, offset)
+	q := `SELECT` + zakazColumns + ` FROM ord_zakaz z WHERE z.data >= $1 AND z.data <= $2` + innClause +
+		` ORDER BY z.data DESC, z.kod LIMIT $` + fmt.Sprintf("%d", len(args)+1) + ` OFFSET $` + fmt.Sprintf("%d", len(args)+2)
+	args = append(args, limit, offset)
+
+	rows, err := r.pool.Query(ctx, q, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -57,9 +62,15 @@ func (r *ZakazRepo) List(ctx context.Context, dateFrom, dateTo time.Time, offset
 		return nil, 0, err
 	}
 
+	countArgs := []any{dateFrom, dateTo}
+	countWhere := "data >= $1 AND data <= $2"
+	if inn != "" {
+		countArgs = append(countArgs, inn)
+		countWhere += " AND post_inn = $3"
+	}
+
 	var total int
-	const countQ = `SELECT COUNT(*) FROM ord_zakaz WHERE data >= $1 AND data <= $2`
-	if err := r.pool.QueryRow(ctx, countQ, dateFrom, dateTo).Scan(&total); err != nil {
+	if err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM ord_zakaz WHERE `+countWhere, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
