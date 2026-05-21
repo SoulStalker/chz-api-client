@@ -19,7 +19,7 @@ func NewZakazRepo(pool *pgxpool.Pool) *ZakazRepo {
 
 const zakazColumns = `
 	z.kod, z.data, z.nomer, z.post_kod, z.post_imya, z.post_inn,
-	z.data_postavki, z.naklad_kod, z.summa, z.updated_at, z.crpt_doc_id`
+	z.data_postavki, z.naklad_kod, z.naklad_nomer, z.summa, z.updated_at, z.crpt_doc_id`
 
 func scanZakaz(row interface {
 	Scan(dest ...any) error
@@ -27,7 +27,7 @@ func scanZakaz(row interface {
 	var z model.Zakaz
 	err := row.Scan(
 		&z.Kod, &z.Data, &z.Nomer, &z.PostKod, &z.PostImya, &z.PostINN,
-		&z.DataPostavki, &z.NakladKod, &z.Summa, &z.UpdatedAt, &z.CRPTDocID,
+		&z.DataPostavki, &z.NakladKod, &z.NakladNomer, &z.Summa, &z.UpdatedAt, &z.CRPTDocID,
 	)
 	return z, err
 }

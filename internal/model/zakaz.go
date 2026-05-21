@@ -11,6 +11,7 @@ type Zakaz struct {
 	PostINN      string
 	DataPostavki time.Time
 	NakladKod    string
+	NakladNomer  string
 	Summa        float64
 	UpdatedAt    time.Time
 	CRPTDocID    *string
