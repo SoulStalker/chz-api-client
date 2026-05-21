@@ -86,8 +86,8 @@ func (h *ZakazHandler) Show(c *fiber.Ctx) error {
 	}
 
 	var candidates []model.Document
-	dateFrom := zakaz.DataPostavki.AddDate(0, 0, -7).UTC().Format("2006-01-02T15:04:05.000Z")
-	dateTo := zakaz.DataPostavki.AddDate(0, 0, 7).UTC().Format("2006-01-02T15:04:05.000Z")
+	dateFrom := zakaz.DataPostavki.AddDate(0, 0, -30).UTC().Format("2006-01-02T15:04:05.000Z")
+	dateTo := zakaz.DataPostavki.AddDate(0, 0, 30).UTC().Format("2006-01-02T15:04:05.000Z")
 
 	result, crptErr := h.crpt.ListDocuments(c.Context(), token, model.DocListParams{
 		PG:       "water",
@@ -98,7 +98,7 @@ func (h *ZakazHandler) Show(c *fiber.Ctx) error {
 	})
 	if crptErr == nil {
 		for _, doc := range result.Results {
-			if doc.SenderInn == zakaz.PostINN {
+			if doc.SenderInn == zakaz.PostINN && doc.Type == "UNIVERSAL_TRANSFER_DOCUMENT" {
 				candidates = append(candidates, doc)
 			}
 		}

@@ -25,10 +25,14 @@ func scanZakaz(row interface {
 	Scan(dest ...any) error
 }) (model.Zakaz, error) {
 	var z model.Zakaz
+	var nakladNomer *string
 	err := row.Scan(
 		&z.Kod, &z.Data, &z.Nomer, &z.PostKod, &z.PostImya, &z.PostINN,
-		&z.DataPostavki, &z.NakladKod, &z.NakladNomer, &z.Summa, &z.UpdatedAt, &z.CRPTDocID,
+		&z.DataPostavki, &z.NakladKod, &nakladNomer, &z.Summa, &z.UpdatedAt, &z.CRPTDocID,
 	)
+	if nakladNomer != nil {
+		z.NakladNomer = *nakladNomer
+	}
 	return z, err
 }
 

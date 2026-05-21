@@ -64,9 +64,9 @@ func (h *DocsHandler) ListDocuments(c *fiber.Ctx) error {
 	isIncoming := strings.Contains(c.Path(), "incoming")
 
 	now := time.Now().UTC()
-	displayDateFrom := now.Add(-72 * time.Hour).Format("2006-01-02")
+	displayDateFrom := now.AddDate(0, 0, -30).Format("2006-01-02")
 	displayDateTo := now.Format("2006-01-02")
-	apiDateFrom := now.Add(-72 * time.Hour).Format("2006-01-02T15:04:05.000Z")
+	apiDateFrom := now.AddDate(0, 0, -30).Format("2006-01-02T15:04:05.000Z")
 	apiDateTo := now.Format("2006-01-02T15:04:05.000Z")
 
 	if v := c.Query("date_from"); v != "" {
